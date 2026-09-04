@@ -579,6 +579,76 @@ h1 {
   font-size: 0.8rem;
 }
 
+.form-intro,
+.form-message,
+.payment-modal > p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.payment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 9, 14, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.payment-modal {
+  position: relative;
+  width: min(460px, 100%);
+  padding: 30px;
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 80px var(--shadow);
+}
+
+.payment-modal h2 {
+  margin-bottom: 12px;
+}
+
+.pix-qr {
+  width: min(220px, 100%);
+  aspect-ratio: 1;
+  margin: 22px auto;
+  padding: 10px;
+  background: #fff;
+}
+
+.copy-field {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  color: var(--muted);
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.copy-field input {
+  width: 100%;
+  padding: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.payment-modal .button {
+  width: 100%;
+}
+
+.payment-status {
+  display: block;
+  margin-top: 18px;
+  color: var(--gold-soft);
+  font-size: 0.82rem;
+}
+
 .reading-progress {
   position: fixed;
   inset: 0 auto auto 0;
@@ -689,6 +759,7 @@ body.light-theme .search-dialog {
   .category-tools select { width: 100%; }
   .search-dialog { padding: 28px 18px; }
   .card-footer { align-items: flex-start; flex-direction: column; }
+  .payment-modal { padding: 26px 18px; }
 }
 
 @media (max-width: 760px) {

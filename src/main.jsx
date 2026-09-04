@@ -49,6 +49,7 @@ function Layout({ children, articles }) {
           <a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades Geradas</a>
           <a href="/sobre" onClick={link('/sobre')}>Sobre</a>
           <a href="/contato" onClick={link('/contato')}>Contato</a>
+          <a href="/submeter" onClick={link('/submeter')}>Submeter artigo</a>
         </nav>
         <div className="header-controls">
           <button className="icon-button" aria-label="Abrir busca" onClick={() => setSearchOpen(true)}>⌕</button>
@@ -147,6 +148,77 @@ function Admin({ articles, onChange }) {
   return <main className="container admin-layout"><section className="contact-card"><p className="eyebrow">CMS local</p><h2>{editing ? 'Editar artigo' : 'Novo artigo'}</h2><form className="contact-form" onSubmit={submit}><label>Título<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label><label>Resumo<textarea required rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label><label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>História Alternativa</option><option>Curiosidades Geradas</option></select></label><label>Conteúdo <span className="field-hint">Um parágrafo por linha</span><textarea required rows="7" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label><button className="button button-primary" type="submit">{editing ? 'Salvar alterações' : 'Publicar artigo'}</button></form></section><section className="admin-list"><p className="eyebrow">Publicados localmente</p>{articles.map((article) => <div className="admin-item" key={article.slug}><strong>{article.title}</strong><div><button className="save-button" onClick={() => edit(article)}>Editar</button><button className="save-button danger" onClick={() => remove(article.slug)}>Excluir</button></div></div>)}</section></main>;
 }
 
+function SubmitArticle() {
+  const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: 'historia-alternativa', authorEmail: '' });
+  const [payment, setPayment] = useState(null);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!payment?.articleId) return undefined;
+    const timer = window.setInterval(async () => {
+      const response = await fetch(`/api/articles/status?id=${encodeURIComponent(payment.articleId)}`);
+      if (!response.ok) return;
+      const result = await response.json();
+      if (result.status === 'pendente_revisao') {
+        window.clearInterval(timer);
+        setPayment(null);
+        setMessage('Pagamento confirmado. Seu artigo foi enviado para a fila de revisão.');
+      }
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [payment?.articleId]);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setMessage('');
+    try {
+      const response = await fetch('/api/articles/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Não foi possível gerar a cobrança.');
+      setPayment(result);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <main className="container single-page submit-page">
+    <section className="contact-card">
+      <p className="eyebrow">Publicação</p>
+      <h2>Submeter artigo</h2>
+      <p className="form-intro">Envie seu texto para avaliação. A taxa de submissão é de R$ 5,00 via Pix.</p>
+      <form className="contact-form" onSubmit={submit}>
+        <label>Título<input required minLength="10" maxLength="160" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
+        <label>E-mail do autor<input required type="email" value={form.authorEmail} onChange={(event) => setForm({ ...form, authorEmail: event.target.value })} /></label>
+        <label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="historia-alternativa">História Alternativa</option><option value="curiosidades-geradas">Curiosidades Geradas</option></select></label>
+        <label>Resumo<textarea required minLength="20" maxLength="500" rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label>
+        <label>Texto<textarea required minLength="100" rows="10" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label>
+        <button className="button button-primary" type="submit" disabled={loading}>{loading ? 'Gerando Pix...' : 'Submeter artigo — R$ 5,00'}</button>
+      </form>
+      {message && <p className="form-message" role="status">{message}</p>}
+    </section>
+    {payment && <div className="payment-overlay" role="dialog" aria-modal="true" aria-labelledby="payment-title">
+      <div className="payment-modal">
+        <button className="search-close" aria-label="Fechar cobrança" onClick={() => setPayment(null)}>×</button>
+        <p className="eyebrow">Pagamento seguro</p>
+        <h2 id="payment-title">Pague R$ 5,00 via Pix</h2>
+        <p>Após a confirmação, o artigo será encaminhado automaticamente para revisão.</p>
+        {payment.qrCodeBase64 && <img className="pix-qr" src={`data:image/png;base64,${payment.qrCodeBase64}`} alt="QR Code Pix para pagamento" />}
+        <label className="copy-field">Pix Copia e Cola<input readOnly value={payment.qrCode || ''} onFocus={(event) => event.target.select()} /></label>
+        <button className="button button-primary" onClick={() => navigator.clipboard?.writeText(payment.qrCode || '')}>Copiar código Pix</button>
+        <span className="payment-status">Aguardando confirmação automática...</span>
+      </div>
+    </div>}
+  </main>;
+}
+
 function StaticPage({ type }) {
   if (type === 'sobre') return <main className="container single-page"><section className="about-hero"><div className="author-photo"><span>HV</span></div><div className="author-copy"><p className="eyebrow">Sobre o autor</p><h2>Helena Voss</h2><p>Escritora, pesquisadora e analista de história, Helena investiga os pontos de inflexão que mudaram o rumo do mundo.</p></div></section><section className="about-story"><p>Seu trabalho combina investigação documental, leitura crítica e curiosidade por tudo aquilo que ficou fora da versão oficial.</p></section></main>;
   return <main className="container single-page"><section className="contact-card"><p className="eyebrow">Contato</p><h2>Parcerias, sugestões e mensagens dos leitores</h2><form className="contact-form" onSubmit={(event) => { event.preventDefault(); alert('Mensagem enviada.'); }}><label>Nome<input required name="nome" placeholder="Seu nome" /></label><label>E-mail<input required type="email" name="email" placeholder="Seu e-mail" /></label><label>Mensagem<textarea required name="mensagem" rows="5" placeholder="Escreva sua mensagem" /></label><button className="button button-primary" type="submit">Enviar mensagem</button></form></section></main>;
@@ -169,6 +241,7 @@ function App() {
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
+  else if (path === '/submeter') content = <SubmitArticle />;
   else if (path === '/admin') content = <Admin articles={localArticles} onChange={setLocalArticles} />;
   return <Layout articles={localArticles}>{content}</Layout>;
 }
