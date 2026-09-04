@@ -1,0 +1,4 @@
+.brand-link { color: inherit; text-decoration: none; }
+.quick-curiosities { margin-top: 2px; }
+.container { min-width: 0; }
+.story-card, .article-content-panel, .page-intro, .contact-card, .about-hero { min-width: 0; }
