@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { articles, categoryInfo } from './data';
-import { auth, db, isConfigured } from './firebase';
+import { auth, isConfigured } from './firebase';
 import '../assets/css/style.css';
 import './responsive.css';
 
@@ -16,10 +15,9 @@ function useAuth() {
     if (!auth) return undefined;
     return onAuthStateChanged(auth, async (user) => {
       if (!user) return setState({ user: null, profile: null, loading: false });
-      const profileSnapshot = db ? await getDoc(doc(db, 'profiles', user.uid)) : null;
       setState({
         user,
-        profile: profileSnapshot?.exists() ? profileSnapshot.data() : { role: 'writer', displayName: user.displayName || '' },
+        profile: { role: 'writer', displayName: user.displayName || '' },
         loading: false
       });
     });
@@ -255,7 +253,7 @@ function AuthPage({ mode = 'login' }) {
   const isLogin = mode === 'login';
   const submit = async (event) => {
     event.preventDefault();
-    if (!auth || !db) return setError('Configure primeiro o Firebase Web SDK.');
+    if (!auth) return setError('Configure primeiro o Firebase Web SDK.');
     setLoading(true); setError('');
     try {
       const credential = isLogin
@@ -263,7 +261,13 @@ function AuthPage({ mode = 'login' }) {
         : await createUserWithEmailAndPassword(auth, form.email, form.password);
       if (!isLogin) {
         await updateProfile(credential.user, { displayName: form.name.trim() });
-        await setDoc(doc(db, 'profiles', credential.user.uid), { displayName: form.name.trim(), email: form.email, role: 'writer', createdAt: new Date().toISOString() });
+        const token = await credential.user.getIdToken();
+        const profileResponse = await fetch('/api/profiles/upsert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ displayName: form.name.trim() })
+        });
+        if (!profileResponse.ok) throw new Error('Não foi possível salvar o perfil.');
       }
       go('/perfil');
     } catch (submitError) {
