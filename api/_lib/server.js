@@ -1,5 +1,6 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -7,15 +8,18 @@ function requireEnv(name) {
   return value;
 }
 
-function firestore() {
-  const app = getApps()[0] || initializeApp({
+function adminApp() {
+  return getApps()[0] || initializeApp({
     credential: cert({
       projectId: requireEnv('FIREBASE_PROJECT_ID'),
       clientEmail: requireEnv('FIREBASE_CLIENT_EMAIL'),
       privateKey: requireEnv('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n')
     })
   });
-  return getFirestore(app);
+}
+
+function firestore() {
+  return getFirestore(adminApp());
 }
 
 async function createArticle(data) {
@@ -37,6 +41,12 @@ async function updateArticle(id, data) {
     ...data,
     updated_at: FieldValue.serverTimestamp()
   });
+}
+
+async function verifyUser(request) {
+  const header = request.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) throw new Error('Autenticação necessária.');
+  return getAuth(adminApp()).verifyIdToken(header.slice(7));
 }
 
 async function mercadoPagoRequest(path, options = {}) {
@@ -73,4 +83,4 @@ function validateArticle(payload) {
   return { title, excerpt, content, authorEmail, category };
 }
 
-export { createArticle, getArticle, mercadoPagoRequest, requireEnv, updateArticle, validateArticle };
+export { createArticle, getArticle, mercadoPagoRequest, requireEnv, updateArticle, validateArticle, verifyUser };

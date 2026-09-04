@@ -1,9 +1,10 @@
-import { createArticle, mercadoPagoRequest, updateArticle, validateArticle } from '../_lib/server.js';
+import { createArticle, mercadoPagoRequest, updateArticle, validateArticle, verifyUser } from '../_lib/server.js';
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' });
 
   try {
+    const user = await verifyUser(request);
     const article = validateArticle(request.body);
     const saved = await createArticle({
       title: article.title,
@@ -11,6 +12,7 @@ export default async function handler(request, response) {
       content: article.content,
       category: article.category,
       author_email: article.authorEmail,
+      author_uid: user.uid,
       status: 'pendente_pagamento'
     });
 

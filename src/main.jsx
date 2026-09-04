@@ -1,11 +1,35 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { articles, categoryInfo } from './data';
+import { auth, db, isConfigured } from './firebase';
 import '../assets/css/style.css';
 import './responsive.css';
 
 const getPath = () => window.location.pathname.replace(/\/+$/, '') || '/';
 const navigate = (url) => window.history.pushState({}, '', url);
+
+function useAuth() {
+  const [state, setState] = useState({ user: null, profile: null, loading: Boolean(auth) });
+  useEffect(() => {
+    if (!auth) return undefined;
+    return onAuthStateChanged(auth, async (user) => {
+      if (!user) return setState({ user: null, profile: null, loading: false });
+      const profileSnapshot = db ? await getDoc(doc(db, 'profiles', user.uid)) : null;
+      setState({
+        user,
+        profile: profileSnapshot?.exists() ? profileSnapshot.data() : { role: 'writer', displayName: user.displayName || '' },
+        loading: false
+      });
+    });
+  }, []);
+  return state;
+}
+
+function AuthNotice() {
+  return <div className="auth-notice" role="status">O login ainda não foi configurado no Firebase. Crie um app Web no Firebase Console e adicione as variáveis VITE_FIREBASE_* na Vercel.</div>;
+}
 
 function useNavigation() {
   const [, refresh] = useState(0);
@@ -17,7 +41,7 @@ function useNavigation() {
   return (url) => { navigate(url); window.dispatchEvent(new PopStateEvent('popstate')); };
 }
 
-function Layout({ children, articles }) {
+function Layout({ children, articles, user, onLogout }) {
   const go = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -49,11 +73,13 @@ function Layout({ children, articles }) {
           <a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades Geradas</a>
           <a href="/sobre" onClick={link('/sobre')}>Sobre</a>
           <a href="/contato" onClick={link('/contato')}>Contato</a>
-          <a href="/submeter" onClick={link('/submeter')}>Submeter artigo</a>
+          {user && <a href="/submeter" onClick={link('/submeter')}>Submeter artigo</a>}
         </nav>
         <div className="header-controls">
           <button className="icon-button" aria-label="Abrir busca" onClick={() => setSearchOpen(true)}>⌕</button>
           <button className="icon-button" aria-label="Alternar tema" onClick={() => setLight((value) => !value)}>◐</button>
+          {user ? <button className="profile-chip" onClick={() => go('/perfil')} title="Abrir perfil">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</button> : <a className="auth-link" href="/login" onClick={link('/login')}>Entrar</a>}
+          {user && <button className="icon-button" aria-label="Sair" onClick={onLogout}>↪</button>}
           <button className="icon-button menu-toggle" aria-label="Abrir menu" onClick={() => setMenuOpen((value) => !value)}>☰</button>
         </div>
       </header>
@@ -149,6 +175,7 @@ function Admin({ articles, onChange }) {
 }
 
 function SubmitArticle() {
+  const { user } = useAuth();
   const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: 'historia-alternativa', authorEmail: '' });
   const [payment, setPayment] = useState(null);
   const [message, setMessage] = useState('');
@@ -174,9 +201,10 @@ function SubmitArticle() {
     setLoading(true);
     setMessage('');
     try {
+      const token = await user.getIdToken();
       const response = await fetch('/api/articles/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(form)
       });
       const result = await response.json();
@@ -196,7 +224,7 @@ function SubmitArticle() {
       <p className="form-intro">Envie seu texto para avaliação. A taxa de submissão é de R$ 5,00 via Pix.</p>
       <form className="contact-form" onSubmit={submit}>
         <label>Título<input required minLength="10" maxLength="160" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-        <label>E-mail do autor<input required type="email" value={form.authorEmail} onChange={(event) => setForm({ ...form, authorEmail: event.target.value })} /></label>
+        <label>E-mail do autor<input required type="email" value={form.authorEmail || user?.email || ''} onChange={(event) => setForm({ ...form, authorEmail: event.target.value })} /></label>
         <label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="historia-alternativa">História Alternativa</option><option value="curiosidades-geradas">Curiosidades Geradas</option></select></label>
         <label>Resumo<textarea required minLength="20" maxLength="500" rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label>
         <label>Texto<textarea required minLength="100" rows="10" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label>
@@ -219,12 +247,55 @@ function SubmitArticle() {
   </main>;
 }
 
+function AuthPage({ mode = 'login' }) {
+  const go = useNavigation();
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const isLogin = mode === 'login';
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!auth || !db) return setError('Configure primeiro o Firebase Web SDK.');
+    setLoading(true); setError('');
+    try {
+      const credential = isLogin
+        ? await signInWithEmailAndPassword(auth, form.email, form.password)
+        : await createUserWithEmailAndPassword(auth, form.email, form.password);
+      if (!isLogin) {
+        await updateProfile(credential.user, { displayName: form.name.trim() });
+        await setDoc(doc(db, 'profiles', credential.user.uid), { displayName: form.name.trim(), email: form.email, role: 'writer', createdAt: new Date().toISOString() });
+      }
+      go('/perfil');
+    } catch (submitError) {
+      setError('Não foi possível concluir. Verifique seus dados e tente novamente.');
+    } finally { setLoading(false); }
+  };
+  return <main className="container single-page"><section className="contact-card auth-card">
+    <p className="eyebrow">Área do escritor</p><h2>{isLogin ? 'Entrar na sua conta' : 'Criar cadastro de escritor'}</h2>
+    {!isConfigured && <AuthNotice />}
+    <form className="contact-form" onSubmit={submit}>
+      {!isLogin && <label>Nome público<input required minLength="2" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>}
+      <label>E-mail<input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></label>
+      <label>Senha<input required minLength="6" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>
+      {error && <p className="form-message" role="alert">{error}</p>}
+      <button className="button button-primary" disabled={loading || !isConfigured}>{loading ? 'Aguarde...' : isLogin ? 'Entrar' : 'Criar conta'}</button>
+    </form>
+    <button className="text-button" onClick={() => go(isLogin ? '/cadastro' : '/login')}>{isLogin ? 'Ainda não tenho cadastro' : 'Já tenho uma conta'}</button>
+  </section></main>;
+}
+
+function Profile({ user, profile, onLogout }) {
+  const go = useNavigation();
+  return <main className="container single-page profile-page"><section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className="tag">Escritor verificado</span></div></section><section className="profile-actions"><button className="button button-primary" onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={onLogout}>Sair da conta</button></section></main>;
+}
+
 function StaticPage({ type }) {
   if (type === 'sobre') return <main className="container single-page"><section className="about-hero"><div className="author-photo"><span>HV</span></div><div className="author-copy"><p className="eyebrow">Sobre o autor</p><h2>Helena Voss</h2><p>Escritora, pesquisadora e analista de história, Helena investiga os pontos de inflexão que mudaram o rumo do mundo.</p></div></section><section className="about-story"><p>Seu trabalho combina investigação documental, leitura crítica e curiosidade por tudo aquilo que ficou fora da versão oficial.</p></section></main>;
   return <main className="container single-page"><section className="contact-card"><p className="eyebrow">Contato</p><h2>Parcerias, sugestões e mensagens dos leitores</h2><form className="contact-form" onSubmit={(event) => { event.preventDefault(); alert('Mensagem enviada.'); }}><label>Nome<input required name="nome" placeholder="Seu nome" /></label><label>E-mail<input required type="email" name="email" placeholder="Seu e-mail" /></label><label>Mensagem<textarea required name="mensagem" rows="5" placeholder="Escreva sua mensagem" /></label><button className="button button-primary" type="submit">Enviar mensagem</button></form></section></main>;
 }
 
 function App() {
+  const { user, profile, loading } = useAuth();
   const [, refresh] = useState(0);
   const [localArticles, setLocalArticles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cms-articles')) || articles; } catch { return articles; }
@@ -236,14 +307,18 @@ function App() {
     return () => window.removeEventListener('popstate', update);
   }, [localArticles]);
   const path = getPath();
+  if (loading) return <Layout articles={localArticles}><main className="container single-page"><section className="contact-card"><p className="form-intro">Carregando sua conta...</p></section></main></Layout>;
   let content = <Home articles={localArticles} />;
   if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={localArticles} />;
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
-  else if (path === '/submeter') content = <SubmitArticle />;
+  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onLogout={() => signOut(auth)} /> : <AuthPage />;
+  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onLogout={() => signOut(auth)} /> : <AuthPage mode="register" />;
+  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} onLogout={() => signOut(auth)} /> : <AuthPage />;
+  else if (path === '/submeter') content = user ? <SubmitArticle /> : <AuthPage />;
   else if (path === '/admin') content = <Admin articles={localArticles} onChange={setLocalArticles} />;
-  return <Layout articles={localArticles}>{content}</Layout>;
+  return <Layout articles={localArticles} user={user} onLogout={() => signOut(auth)}>{content}</Layout>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
