@@ -179,7 +179,7 @@ function Admin({ articles, onChange }) {
 
 function SubmitArticle() {
   const { user } = useAuth();
-  const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: 'historia-alternativa', authorEmail: '' });
+  const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: 'historia-alternativa' });
   const [payment, setPayment] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -208,7 +208,7 @@ function SubmitArticle() {
       const response = await fetch('/api/articles/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ ...form, authorEmail: user.email })
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Não foi possível gerar a cobrança.');
@@ -227,7 +227,7 @@ function SubmitArticle() {
       <p className="form-intro">Envie seu texto para avaliação. A taxa de submissão é de R$ 5,00 via Pix.</p>
       <form className="contact-form" onSubmit={submit}>
         <label>Título<input required minLength="10" maxLength="160" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-        <label>E-mail do autor<input required type="email" value={form.authorEmail || user?.email || ''} onChange={(event) => setForm({ ...form, authorEmail: event.target.value })} /></label>
+        <label>E-mail do autor<input required type="email" value={user.email || ''} readOnly /></label>
         <label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="historia-alternativa">História Alternativa</option><option value="curiosidades-geradas">Curiosidades Geradas</option></select></label>
         <label>Resumo<textarea required minLength="20" maxLength="500" rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label>
         <label>Texto<textarea required minLength="100" rows="10" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label>

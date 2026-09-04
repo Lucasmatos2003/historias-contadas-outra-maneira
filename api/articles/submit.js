@@ -5,7 +5,7 @@ export default async function handler(request, response) {
 
   try {
     const user = await verifyUser(request);
-    const article = validateArticle(request.body);
+    const article = validateArticle({ ...request.body, authorEmail: user.email });
     const saved = await createArticle({
       title: article.title,
       excerpt: article.excerpt,
