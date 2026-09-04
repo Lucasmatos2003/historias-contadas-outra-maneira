@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, onAuthStateChanged, reload, sendEmailVerification, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
 import { articles, categoryInfo } from './data';
 import { auth, isConfigured } from './firebase';
 import '../assets/css/style.css';
@@ -11,6 +11,11 @@ const navigate = (url) => window.history.pushState({}, '', url);
 
 function useAuth() {
   const [state, setState] = useState({ user: null, profile: null, loading: Boolean(auth) });
+  const refreshUser = async () => {
+    if (!auth?.currentUser) return;
+    await reload(auth.currentUser);
+    setState((current) => ({ ...current, user: auth.currentUser }));
+  };
   useEffect(() => {
     if (!auth) return undefined;
     return onAuthStateChanged(auth, async (user) => {
@@ -22,7 +27,7 @@ function useAuth() {
       });
     });
   }, []);
-  return state;
+  return { ...state, refreshUser };
 }
 
 function AuthNotice() {
@@ -261,6 +266,7 @@ function AuthPage({ mode = 'login' }) {
         : await createUserWithEmailAndPassword(auth, form.email, form.password);
       if (!isLogin) {
         await updateProfile(credential.user, { displayName: form.name.trim() });
+        await sendEmailVerification(credential.user);
         const token = await credential.user.getIdToken();
         const profileResponse = await fetch('/api/profiles/upsert', {
           method: 'POST',
@@ -269,9 +275,17 @@ function AuthPage({ mode = 'login' }) {
         });
         if (!profileResponse.ok) throw new Error('Não foi possível salvar o perfil.');
       }
-      go('/perfil');
+      go(isLogin ? '/perfil' : '/perfil?cadastro=sucesso');
     } catch (submitError) {
-      setError('Não foi possível concluir. Verifique seus dados e tente novamente.');
+      const messages = {
+        'auth/email-already-in-use': 'Este e-mail já possui uma conta. Use “Já tenho uma conta” para entrar.',
+        'auth/invalid-credential': 'E-mail ou senha incorretos.',
+        'auth/invalid-email': 'Informe um e-mail válido.',
+        'auth/weak-password': 'A senha precisa ter pelo menos 6 caracteres.',
+        'auth/network-request-failed': 'Não foi possível conectar ao Firebase. Verifique sua internet.',
+        'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'A chave pública do Firebase está inválida na Vercel.'
+      };
+      setError(messages[submitError.code] || submitError.message || 'Não foi possível concluir. Verifique seus dados e tente novamente.');
     } finally { setLoading(false); }
   };
   return <main className="container single-page"><section className="contact-card auth-card">
@@ -288,9 +302,18 @@ function AuthPage({ mode = 'login' }) {
   </section></main>;
 }
 
-function Profile({ user, profile, onLogout }) {
+function Profile({ user, profile, onLogout, onVerified, registrationSuccess = false }) {
   const go = useNavigation();
-  return <main className="container single-page profile-page"><section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className="tag">Escritor verificado</span></div></section><section className="profile-actions"><button className="button button-primary" onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={onLogout}>Sair da conta</button></section></main>;
+  const [message, setMessage] = useState('');
+  const resend = async () => {
+    await sendEmailVerification(user);
+    setMessage('E-mail de verificação reenviado. Confira sua caixa de entrada e a pasta de spam.');
+  };
+  const verify = async () => {
+    await onVerified();
+    setMessage(auth.currentUser?.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
+  };
+  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={onLogout}>Sair da conta</button></section></main>;
 }
 
 function StaticPage({ type }) {
@@ -299,7 +322,7 @@ function StaticPage({ type }) {
 }
 
 function App() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshUser } = useAuth();
   const [, refresh] = useState(0);
   const [localArticles, setLocalArticles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cms-articles')) || articles; } catch { return articles; }
@@ -311,16 +334,17 @@ function App() {
     return () => window.removeEventListener('popstate', update);
   }, [localArticles]);
   const path = getPath();
+  const registrationSuccess = new URLSearchParams(window.location.search).get('cadastro') === 'sucesso';
   if (loading) return <Layout articles={localArticles}><main className="container single-page"><section className="contact-card"><p className="form-intro">Carregando sua conta...</p></section></main></Layout>;
   let content = <Home articles={localArticles} />;
   if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={localArticles} />;
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
-  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onLogout={() => signOut(auth)} /> : <AuthPage />;
-  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onLogout={() => signOut(auth)} /> : <AuthPage mode="register" />;
-  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} onLogout={() => signOut(auth)} /> : <AuthPage />;
-  else if (path === '/submeter') content = user ? <SubmitArticle /> : <AuthPage />;
+  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage />;
+  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage mode="register" />;
+  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage />;
+  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle /> : <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} />) : <AuthPage />;
   else if (path === '/admin') content = <Admin articles={localArticles} onChange={setLocalArticles} />;
   return <Layout articles={localArticles} user={user} onLogout={() => signOut(auth)}>{content}</Layout>;
 }

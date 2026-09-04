@@ -80,4 +80,6 @@ Para ativar o login:
 
 O cadastro cria um perfil na coleção `profiles` com a função `writer`. A rota `/submeter` exige login e envia o token do Firebase ao backend antes de aceitar o artigo. A cobrança continua dependendo da configuração do Mercado Pago.
 
+O cadastro também envia um link de verificação para o e-mail informado. A área de submissão permanece bloqueada até o usuário clicar nesse link. Para testar, use um endereço que você controla e confira também a pasta de spam. O Firebase permite personalizar o remetente e o texto em **Authentication > Templates > Email address verification**.
+
 O valor de R$ 5,00 está fixado no endpoint de submissão para evitar que o cliente altere o preço. Em produção, adicione autenticação, rate limiting e validação da assinatura do webhook antes de abrir o fluxo ao público.

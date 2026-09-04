@@ -626,6 +626,14 @@ h1 {
   margin-right: auto;
 }
 
+.success-message {
+  margin: 30px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(112, 190, 130, 0.5);
+  background: rgba(49, 116, 67, 0.18);
+  color: #b9efc1;
+}
+
 .profile-hero {
   display: flex;
   align-items: center;
@@ -650,6 +658,14 @@ h1 {
 .profile-hero p:not(.eyebrow) { color: var(--muted); margin: 0 0 16px; }
 .profile-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 .button-secondary { border-color: var(--gold); color: var(--gold-soft); background: transparent; }
+.tag-warning { border-color: rgba(239, 155, 142, 0.6); color: #efb2a8; }
+.verification-box {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid rgba(217,179,108,0.45);
+  background: rgba(217,179,108,0.08);
+}
+.verification-box p { color: var(--muted); line-height: 1.7; }
 
 .payment-overlay {
   position: fixed;
