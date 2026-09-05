@@ -30,7 +30,7 @@ Blog e portal de conteúdo construído com React + Vite, com foco em história a
 - `/artigo/:slug` — leitura individual de um artigo.
 - `/sobre` — sobre o autor.
 - `/contato` — formulário de contato.
-- `/admin` — CMS local para criar, editar e excluir artigos.
+- `/admin` — painel administrativo protegido para revisar artigos do Firestore.
 - `/submeter` — submissão com validação e cobrança Pix de R$ 5,00.
 - `/login` e `/cadastro` — autenticação de leitores e escritores.
 - `/perfil` — perfil do escritor autenticado.
@@ -54,9 +54,11 @@ npm run build
 
 O script de build chama o Vite diretamente pelo Node para evitar problemas de permissão do executável `.bin` em ambientes Linux de CI/CD.
 
-## CMS local
+## Painel administrativo
 
-Acesse `/admin` durante o desenvolvimento. Os artigos criados, editados ou removidos são armazenados no `localStorage` do navegador, sem backend. Isso é ideal para prototipação e uso individual; para publicação multiusuário, o próximo passo é conectar uma API ou CMS headless.
+O `/admin` exige login no Firebase e valida o UID do token no servidor contra `ADMIN_UID`. Configure essa variável com o UID da conta administrativa em todos os ambientes da Vercel. O painel lista os artigos reais do Firestore, permite filtrar por status, aprovar e rejeitar textos; rejeições exigem uma justificativa que aparece no perfil do escritor.
+
+Para descobrir o UID, abra **Firebase Console > Authentication > Users**, copie o UID do administrador e salve-o como `ADMIN_UID`. Não confie em um campo `role` enviado pelo navegador: a autorização é sempre feita no endpoint server-side.
 
 ## Deploy
 

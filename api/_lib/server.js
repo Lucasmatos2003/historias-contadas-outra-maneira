@@ -49,10 +49,30 @@ async function getArticlesByAuthor(uid) {
         excerpt: data.excerpt,
         category: data.category,
         status: data.status,
+        review_note: data.review_note || '',
         created_at: data.created_at?.toDate?.().toISOString() || null
       };
     })
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+}
+
+async function getAllArticles() {
+  const snapshot = await firestore().collection('articles').get();
+  return snapshot.docs.map((document) => {
+    const data = document.data();
+    return {
+      id: document.id,
+      title: data.title,
+      excerpt: data.excerpt,
+      content: data.content,
+      category: data.category,
+      author_email: data.author_email,
+      author_uid: data.author_uid,
+      status: data.status,
+      created_at: data.created_at?.toDate?.().toISOString() || null,
+      review_note: data.review_note || ''
+    };
+  }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
 }
 
 async function updateArticle(id, data) {
@@ -66,6 +86,12 @@ async function verifyUser(request) {
   const header = request.headers.authorization || '';
   if (!header.startsWith('Bearer ')) throw new Error('Autenticação necessária.');
   return getAuth(adminApp()).verifyIdToken(header.slice(7));
+}
+
+async function verifyAdmin(request) {
+  const user = await verifyUser(request);
+  if (user.uid !== requireEnv('ADMIN_UID')) throw new Error('Acesso de administrador necessário.');
+  return user;
 }
 
 async function mercadoPagoRequest(path, options = {}) {
@@ -102,4 +128,4 @@ function validateArticle(payload) {
   return { title, excerpt, content, authorEmail, category };
 }
 
-export { createArticle, getArticle, getArticlesByAuthor, mercadoPagoRequest, requireEnv, updateArticle, validateArticle, verifyUser };
+export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, mercadoPagoRequest, requireEnv, updateArticle, validateArticle, verifyAdmin, verifyUser };
