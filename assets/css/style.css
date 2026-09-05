@@ -869,16 +869,33 @@ h1 {
 }
 .my-articles .section-head { margin-top: 0; }
 .review-item {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
   padding: 18px 0;
   border-top: 1px solid var(--line);
 }
+.review-item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
 .review-item h4 { margin: 12px 0 8px; font-size: 1.35rem; }
 .review-item p { margin: 0 0 8px; color: var(--muted); line-height: 1.6; }
-.review-item small { color: var(--muted); }
+.review-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 12px;
+  color: var(--gold-soft);
+  font-size: 0.78rem;
+}
+.review-description {
+  margin-top: 12px !important;
+  font-size: 0.9rem;
+}
+.section-caption {
+  margin-top: 8px;
+  color: var(--muted);
+}
 .review-status {
   flex-shrink: 0;
   padding: 8px 10px;
@@ -889,6 +906,12 @@ h1 {
 }
 .status-aprovado { border-color: #70be82; color: #b9efc1; }
 .status-rejeitado { border-color: #ef9b8e; color: #efb2a8; }
+.review-item .review-note {
+  margin-top: 16px;
+}
+.review-item .review-note p {
+  margin: 6px 0 0;
+}
 
 .payment-overlay {
   position: fixed;
@@ -1068,6 +1091,7 @@ body.light-theme .search-dialog {
   .admin-toolbar, .review-admin-item { display: block; }
   .admin-toolbar .button { margin-top: 12px; width: 100%; }
   .review-admin-actions { margin-top: 18px; }
+  .review-item-heading { align-items: flex-start; flex-direction: column; }
   .category-tools select { width: 100%; }
   .search-dialog { padding: 28px 18px; }
   .card-footer { align-items: flex-start; flex-direction: column; }

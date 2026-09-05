@@ -22,6 +22,12 @@ function firestore() {
   return getFirestore(adminApp());
 }
 
+function serializeDate(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  return value.toDate?.().toISOString() || null;
+}
+
 async function createArticle(data) {
   const reference = await firestore().collection('articles').add({
     ...data,
@@ -50,7 +56,9 @@ async function getArticlesByAuthor(uid) {
         category: data.category,
         status: data.status,
         review_note: data.review_note || '',
-        created_at: data.created_at?.toDate?.().toISOString() || null
+        created_at: serializeDate(data.created_at),
+        reviewed_at: serializeDate(data.reviewed_at),
+        updated_at: serializeDate(data.updated_at)
       };
     })
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
