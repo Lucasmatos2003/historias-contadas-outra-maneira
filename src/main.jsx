@@ -87,7 +87,18 @@ function Layout({ children, articles, user, onLogout }) {
         </div>
       </header>
       {children}
-      <footer className="site-footer">© {new Date().getFullYear()} Histórias Contadas de Outra Maneira</footer>
+      <footer className="site-footer">
+        <div className="footer-main">
+          <div className="footer-brand">
+            <span className="footer-mark">H</span>
+            <div><p className="eyebrow">Revista digital</p><strong>Histórias Contadas<br />de Outra Maneira</strong></div>
+          </div>
+          <p className="footer-description">Ideias, hipóteses e histórias que atravessam os caminhos conhecidos.</p>
+          <div className="footer-column"><span className="footer-title">Explorar</span><a href="/" onClick={link('/')}>Início</a><a href="/categoria/historia-alternativa" onClick={link('/categoria/historia-alternativa')}>História alternativa</a><a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades</a></div>
+          <div className="footer-column"><span className="footer-title">Revista</span><a href="/sobre" onClick={link('/sobre')}>Sobre o autor</a><a href="/contato" onClick={link('/contato')}>Contato</a><a href={user ? '/submeter' : '/cadastro'} onClick={link(user ? '/submeter' : '/cadastro')}>Escreva conosco</a></div>
+        </div>
+        <div className="footer-bottom"><span>© {new Date().getFullYear()} Histórias Contadas de Outra Maneira</span><span>Feito para quem gosta de imaginar outros caminhos.</span></div>
+      </footer>
       {searchOpen && <div className="search-overlay is-open" onClick={(event) => event.target === event.currentTarget && setSearchOpen(false)}>
         <div className="search-dialog" role="dialog" aria-modal="true">
           <button className="search-close" aria-label="Fechar busca" onClick={() => setSearchOpen(false)}>×</button>
