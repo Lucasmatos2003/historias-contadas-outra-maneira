@@ -13,8 +13,16 @@ export default async function handler(request, response) {
       category: article.category,
       author_email: article.authorEmail,
       author_uid: user.uid,
-      status: 'pendente_pagamento'
+      status: process.env.MERCADOPAGO_ACCESS_TOKEN ? 'pendente_pagamento' : 'pendente_revisao'
     });
+
+    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      return response.status(201).json({
+        articleId: saved.id,
+        paymentRequired: false,
+        status: 'pendente_revisao'
+      });
+    }
 
     const payment = await mercadoPagoRequest('/v1/payments', {
       method: 'POST',

@@ -211,7 +211,11 @@ function SubmitArticle({ user }) {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Não foi possível gerar a cobrança.');
-      setPayment(result);
+      if (result.paymentRequired === false) {
+        setMessage('Artigo enviado com sucesso para a fila de revisão.');
+      } else {
+        setPayment(result);
+      }
     } catch (error) {
       setMessage(error.message);
     } finally {
