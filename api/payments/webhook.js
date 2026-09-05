@@ -1,4 +1,4 @@
-import { getArticle, mercadoPagoRequest, publicError, rateLimit, updateArticle } from '../_lib/server.js';
+import { getArticle, mercadoPagoRequest, publicError, rateLimit, RequestError, updateArticle, verifyMercadoPagoSignature } from '../_lib/server.js';
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' });
@@ -7,7 +7,8 @@ export default async function handler(request, response) {
     rateLimit(request, 'webhook', 120, 60 * 1000);
     const payload = request.body;
     const paymentId = payload?.data?.id || payload?.id;
-    if (!paymentId) return response.json({ received: true });
+    if (!paymentId) throw new RequestError('Notificação inválida.', 400);
+    verifyMercadoPagoSignature(request, String(paymentId));
 
     const payment = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}`);
     const articleId = payment.external_reference;

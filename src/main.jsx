@@ -9,6 +9,10 @@ import './responsive.css';
 const getPath = () => window.location.pathname.replace(/\/+$/, '') || '/';
 const navigate = (url) => window.history.pushState({}, '', url);
 
+function LoadingState({ label = 'Carregando...' }) {
+  return <div className="loading-state" role="status" aria-live="polite"><span className="loading-spinner" aria-hidden="true" />{label}</div>;
+}
+
 function useAuth() {
   const [state, setState] = useState({ user: null, profile: null, loading: Boolean(auth) });
   const refreshUser = async () => {
@@ -41,7 +45,11 @@ function useNavigation() {
     window.addEventListener('popstate', update);
     return () => window.removeEventListener('popstate', update);
   }, []);
-  return (url) => { navigate(url); window.dispatchEvent(new PopStateEvent('popstate')); };
+  return (url) => {
+    if (window.__unsavedArticle && !window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) return;
+    navigate(url);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
 }
 
 function Layout({ children, articles, user, onLogout }) {
@@ -61,6 +69,10 @@ function Layout({ children, articles, user, onLogout }) {
     event.preventDefault();
     setMenuOpen(false);
     go(url);
+  };
+  const logout = () => {
+    if (window.__unsavedArticle && !window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) return;
+    onLogout();
   };
 
   return (
@@ -82,8 +94,8 @@ function Layout({ children, articles, user, onLogout }) {
           <button className="icon-button" aria-label="Abrir busca" onClick={() => setSearchOpen(true)}>⌕</button>
           <button className="icon-button" aria-label="Alternar tema" onClick={() => setLight((value) => !value)}>◐</button>
           {user ? <button className="profile-chip" onClick={() => go('/perfil')} title="Abrir perfil">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</button> : <a className="auth-link" href="/login" onClick={link('/login')}>Entrar</a>}
-          {user && <button className="icon-button" aria-label="Sair" onClick={onLogout}>↪</button>}
-          <button className="icon-button menu-toggle" aria-label="Abrir menu" onClick={() => setMenuOpen((value) => !value)}>☰</button>
+          {user && <button className="icon-button" aria-label="Sair" onClick={logout}>↪</button>}
+          <button className="icon-button menu-toggle" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen((value) => !value)}>☰</button>
         </div>
       </header>
       {children}
@@ -149,6 +161,7 @@ function Sidebar() {
 
 function Category({ slug, articles }) {
   const info = categoryInfo[slug];
+  if (!info) return <NotFound />;
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('recent');
   const [page, setPage] = useState(1);
@@ -166,7 +179,8 @@ function Category({ slug, articles }) {
 }
 
 function Article({ slug, articles }) {
-  const article = articles.find((item) => item.slug === slug) || articles[0];
+  const article = articles.find((item) => item.slug === slug);
+  if (!article) return <NotFound />;
   useEffect(() => { document.title = `${article.title} | Histórias Contadas de Outra Maneira`; }, [article]);
   return <main className="container article-layout"><article className="article-content-panel"><div className="article-header"><p className="eyebrow">{article.category}</p><h2>{article.title}</h2><div className="meta-row"><span>Por {article.author}</span><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div><div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} /><div className="article-body">{article.content.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div></article><Sidebar /></main>;
 }
@@ -245,7 +259,7 @@ function ReviewAdmin({ user }) {
   return <main className="container single-page admin-review-page">
     <section className="page-intro"><p className="eyebrow">Administração</p><h2>Fila de revisão</h2><p>Analise os artigos enviados e decida quais serão aprovados para publicação.</p><div className="admin-toolbar"><label>Status<select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="pendente_revisao">Aguardando revisão</option><option value="aprovado">Aprovados</option><option value="rejeitado">Rejeitados</option><option value="todos">Todos</option></select></label><button className="button button-secondary" onClick={load} disabled={loading}>{loading ? 'Atualizando...' : 'Atualizar fila'}</button></div></section>
     {error && <p className="form-message" role="alert">{error}</p>}
-    {loading && <section className="admin-review-list"><p className="empty-state">Carregando artigos...</p></section>}
+    {loading && <section className="admin-review-list"><LoadingState label="Carregando artigos..." /></section>}
     {!loading && !visible.length && <section className="admin-review-list"><p className="empty-state">Nenhum artigo nesta categoria.</p></section>}
     {!loading && visible.length > 0 && <section className="admin-review-list">{visible.map((article) => <article className="review-admin-item" key={article.id}><div className="review-admin-content"><div className="review-admin-heading"><span className="tag">{article.category}</span><span className={`review-status status-${article.status}`}>{article.status === 'pendente_revisao' ? 'Em revisão' : article.status === 'aprovado' ? 'Aprovado' : 'Rejeitado'}</span></div><h3>{article.title}</h3><p>{article.excerpt}</p><div className="review-admin-meta"><span>{article.author_email}</span><span>{article.created_at ? new Date(article.created_at).toLocaleDateString('pt-BR') : 'Data pendente'}</span></div><details><summary>Ver texto completo</summary><div className="review-text">{Array.isArray(article.content) ? article.content.map((paragraph) => <p key={paragraph}>{paragraph}</p>) : <p>{article.content}</p>}</div></details>{article.review_note && <p className="review-note"><strong>Justificativa:</strong> {article.review_note}</p>}</div>{article.status === 'pendente_revisao' && <div className="review-admin-actions"><button className="button button-primary" onClick={() => updateStatus(article, 'aprovado')}>Aprovar</button><button className="button button-secondary" onClick={() => { setReviewing(article.id); setReviewNote(''); }}>Rejeitar</button></div>}{reviewing === article.id && <div className="review-dialog"><label>Justificativa da rejeição<textarea rows="4" value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Explique ao escritor o que precisa ser ajustado." /></label><div className="profile-actions"><button className="button button-secondary" onClick={() => setReviewing(null)}>Cancelar</button><button className="button button-primary" onClick={() => updateStatus(article, 'rejeitado')}>Confirmar rejeição</button></div></div>}</article>)}</section>}
   </main>;
@@ -256,6 +270,21 @@ function SubmitArticle({ user }) {
   const [payment, setPayment] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const hasDraft = [form.title, form.excerpt, form.content].some((value) => value.trim());
+
+  useEffect(() => {
+    window.__unsavedArticle = hasDraft && !loading;
+    const handleBeforeUnload = (event) => {
+      if (!window.__unsavedArticle) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.__unsavedArticle = false;
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasDraft, loading]);
 
   useEffect(() => {
     if (!payment?.articleId) return undefined;
@@ -385,6 +414,7 @@ function AuthPage({ mode = 'login' }) {
 const reviewStatusDetails = {
   pendente_revisao: { label: 'Em revisão', description: 'Seu artigo está na fila para análise da equipe editorial.' },
   pendente_pagamento: { label: 'Aguardando pagamento', description: 'Finalize o pagamento da submissão para que o artigo entre na fila de revisão.' },
+  pagamento_erro: { label: 'Erro no pagamento', description: 'Não foi possível gerar a cobrança. Envie o artigo novamente ou tente mais tarde.' },
   aprovado: { label: 'Aprovado', description: 'Seu artigo foi aprovado pela equipe editorial.' },
   rejeitado: { label: 'Rejeitado', description: 'Seu artigo precisa de ajustes antes de ser reenviado.' }
 };
@@ -439,12 +469,17 @@ function Profile({ user, profile, onLogout, onVerified, registrationSuccess = fa
     await onVerified();
     setMessage(auth.currentUser?.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
   };
-  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={onLogout}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <p className="empty-state">Carregando seus artigos...</p>}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
+  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
 }
 
 function StaticPage({ type }) {
   if (type === 'sobre') return <main className="container single-page"><section className="about-hero"><div className="author-photo"><span>HV</span></div><div className="author-copy"><p className="eyebrow">Sobre o autor</p><h2>Helena Voss</h2><p>Escritora, pesquisadora e analista de história, Helena investiga os pontos de inflexão que mudaram o rumo do mundo.</p></div></section><section className="about-story"><p>Seu trabalho combina investigação documental, leitura crítica e curiosidade por tudo aquilo que ficou fora da versão oficial.</p></section></main>;
   return <main className="container single-page"><section className="contact-card"><p className="eyebrow">Contato</p><h2>Parcerias, sugestões e mensagens dos leitores</h2><form className="contact-form" onSubmit={(event) => { event.preventDefault(); alert('Mensagem enviada.'); }}><label>Nome<input required name="nome" placeholder="Seu nome" /></label><label>E-mail<input required type="email" name="email" placeholder="Seu e-mail" /></label><label>Mensagem<textarea required name="mensagem" rows="5" placeholder="Escreva sua mensagem" /></label><button className="button button-primary" type="submit">Enviar mensagem</button></form></section></main>;
+}
+
+function NotFound() {
+  const go = useNavigation();
+  return <main className="container single-page"><section className="contact-card not-found-page"><p className="eyebrow">Erro 404</p><h2>Página não encontrada</h2><p>Esse caminho não existe ou foi movido. Volte para a página inicial e continue explorando.</p><button className="button button-primary" onClick={() => go('/')}>Voltar para a Home</button></section></main>;
 }
 
 function App() {
@@ -461,7 +496,7 @@ function App() {
   }, [localArticles]);
   const path = getPath();
   const registrationSuccess = new URLSearchParams(window.location.search).get('cadastro') === 'sucesso';
-  if (loading) return <Layout articles={localArticles}><main className="container single-page"><section className="contact-card"><p className="form-intro">Carregando sua conta...</p></section></main></Layout>;
+  if (loading) return <Layout articles={localArticles}><main className="container single-page"><section className="contact-card"><LoadingState label="Carregando sua conta..." /></section></main></Layout>;
   let content = <Home articles={localArticles} />;
   if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={localArticles} />;
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
@@ -472,6 +507,7 @@ function App() {
   else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage />;
   else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} />) : <AuthPage />;
   else if (path === '/admin') content = user ? <ReviewAdmin user={user} /> : <AuthPage />;
+  else if (!['/', '/login', '/cadastro', '/perfil', '/submeter', '/admin'].includes(path)) content = <NotFound />;
   return <Layout articles={localArticles} user={user} onLogout={() => signOut(auth)}>{content}</Layout>;
 }
 

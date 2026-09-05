@@ -70,7 +70,7 @@ O fluxo de `/submeter` grava o artigo como `pendente_pagamento` no Cloud Firesto
 
 1. Crie um projeto no [Firebase Console](https://console.firebase.google.com/), ative o Cloud Firestore e gere uma conta de serviço.
 2. Configure as variáveis de [.env.example](./.env.example) no Vercel. Preserve as quebras de linha da chave privada usando `\n`.
-3. Configure o endpoint do webhook como `/api/payments/webhook` no Mercado Pago.
+3. Configure o endpoint do webhook como `/api/payments/webhook` no Mercado Pago e salve o segredo de assinatura em `MERCADOPAGO_WEBHOOK_SECRET`.
 
 ### Login e perfil do escritor
 
@@ -88,4 +88,4 @@ O valor de R$ 5,00 está fixado no endpoint de submissão para evitar que o clie
 
 As APIs autenticadas aplicam limites de requisições, validam o tamanho e o formato dos campos no servidor e não devolvem detalhes internos de Firebase ou Firestore. O painel administrativo exige o `ADMIN_UID`; usuários escritores não conseguem listar ou alterar artigos pela API administrativa. O rate limiting atual usa a memória da função serverless; para escalar horizontalmente, substitua o armazenamento por Vercel KV ou Redis compartilhado.
 
-Enquanto `MERCADOPAGO_ACCESS_TOKEN` não estiver configurado, o modo temporário salva os artigos diretamente como `pendente_revisao`, sem cobrança. Ao adicionar o token na Vercel, a cobrança Pix de R$ 5,00 passa a ser exigida automaticamente.
+Enquanto `MERCADOPAGO_ACCESS_TOKEN` não estiver configurado, o modo temporário salva os artigos diretamente como `pendente_revisao`, sem cobrança. A conta cujo UID corresponde a `ADMIN_UID` também é isenta da taxa e entra diretamente em revisão. Se a criação da cobrança falhar, o artigo é marcado como `pagamento_erro`, evitando registros presos em `pendente_pagamento`. Webhooks sem assinatura válida são rejeitados.

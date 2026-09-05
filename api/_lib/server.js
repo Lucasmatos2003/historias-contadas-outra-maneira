@@ -1,6 +1,7 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -40,6 +41,26 @@ function publicError(error, fallback = 'Não foi possível concluir a operação
   if (error?.status === 400) return { status: 400, message: error.message };
   console.error(error);
   return { status: 500, message: fallback };
+}
+
+function verifyMercadoPagoSignature(request, paymentId) {
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  if (!secret) throw new RequestError('Webhook não configurado.', 500);
+  const signature = request.headers['x-signature'] || '';
+  const requestId = request.headers['x-request-id'] || '';
+  const parts = Object.fromEntries(signature.split(',').map((part) => part.trim().split('=')));
+  const timestamp = Number(parts.ts);
+  const received = parts.v1;
+  if (!requestId || !received || !Number.isFinite(timestamp) || Math.abs(Date.now() - timestamp * 1000) > 5 * 60 * 1000) {
+    throw new RequestError('Assinatura inválida.', 401);
+  }
+  const manifest = `id:${paymentId};request-id:${requestId};ts:${timestamp};`;
+  const expected = createHmac('sha256', secret).update(manifest).digest('hex');
+  const expectedBuffer = Buffer.from(expected, 'hex');
+  const receivedBuffer = Buffer.from(received, 'hex');
+  if (expectedBuffer.length !== receivedBuffer.length || !timingSafeEqual(expectedBuffer, receivedBuffer)) {
+    throw new RequestError('Assinatura inválida.', 401);
+  }
 }
 
 function adminApp() {
@@ -180,4 +201,4 @@ function validateArticle(payload) {
   return { title, excerpt, content, authorEmail, category };
 }
 
-export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, verifyAdmin, verifyUser };
+export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, verifyAdmin, verifyMercadoPagoSignature, verifyUser };

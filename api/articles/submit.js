@@ -7,6 +7,7 @@ export default async function handler(request, response) {
     const user = await verifyUser(request);
     rateLimit(request, `submit:${user.uid}`, 5, 15 * 60 * 1000);
     const article = validateArticle({ ...request.body, authorEmail: user.email });
+    const isAdmin = Boolean(process.env.ADMIN_UID && user.uid === process.env.ADMIN_UID);
     const saved = await createArticle({
       title: article.title,
       excerpt: article.excerpt,
@@ -14,10 +15,10 @@ export default async function handler(request, response) {
       category: article.category,
       author_email: article.authorEmail,
       author_uid: user.uid,
-      status: process.env.MERCADOPAGO_ACCESS_TOKEN ? 'pendente_pagamento' : 'pendente_revisao'
+      status: process.env.MERCADOPAGO_ACCESS_TOKEN && !isAdmin ? 'pendente_pagamento' : 'pendente_revisao'
     });
 
-    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+    if (!process.env.MERCADOPAGO_ACCESS_TOKEN || isAdmin) {
       return response.status(201).json({
         articleId: saved.id,
         paymentRequired: false,
@@ -25,18 +26,24 @@ export default async function handler(request, response) {
       });
     }
 
-    const payment = await mercadoPagoRequest('/v1/payments', {
-      method: 'POST',
-      headers: { 'X-Idempotency-Key': `article-${saved.id}` },
-      body: JSON.stringify({
-        transaction_amount: 5,
-        description: `Taxa de submissão: ${article.title}`,
-        payment_method_id: 'pix',
-        payer: { email: article.authorEmail },
-        external_reference: String(saved.id),
-        notification_url: `${process.env.PUBLIC_APP_URL || `https://${request.headers.host}`}/api/payments/webhook`
-      })
-    });
+    let payment;
+    try {
+      payment = await mercadoPagoRequest('/v1/payments', {
+        method: 'POST',
+        headers: { 'X-Idempotency-Key': `article-${saved.id}` },
+        body: JSON.stringify({
+          transaction_amount: 5,
+          description: `Taxa de submissão: ${article.title}`,
+          payment_method_id: 'pix',
+          payer: { email: article.authorEmail },
+          external_reference: String(saved.id),
+          notification_url: `${process.env.PUBLIC_APP_URL || `https://${request.headers.host}`}/api/payments/webhook`
+        })
+      });
+    } catch (paymentError) {
+      await updateArticle(saved.id, { status: 'pagamento_erro', payment_status: 'error' });
+      throw paymentError;
+    }
 
     await updateArticle(saved.id, {
       payment_id: String(payment.id),

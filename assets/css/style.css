@@ -24,6 +24,10 @@ img { max-width: 100%; height: auto; display: block; }
 button, input, textarea, select { font: inherit; }
 button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
 
 .page-shell {
   width: min(100%, 1440px);
@@ -110,6 +114,23 @@ h1 {
   transition: color 0.2s ease;
 }
 .main-nav a.active, .main-nav a:hover { color: var(--gold-soft); }
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 72px;
+  color: var(--muted);
+}
+.loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(217,179,108,0.25);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: loading-spin 0.8s linear infinite;
+}
+@keyframes loading-spin { to { transform: rotate(360deg); } }
 
 .container {
   display: grid;
@@ -907,11 +928,23 @@ h1 {
 .status-aprovado { border-color: #70be82; color: #b9efc1; }
 .status-rejeitado { border-color: #ef9b8e; color: #efb2a8; }
 .status-pendente_pagamento { border-color: #d9b36c; color: var(--gold-soft); }
+.status-pagamento_erro { border-color: #ef9b8e; color: #efb2a8; }
 .review-item .review-note {
   margin-top: 16px;
 }
 .review-item .review-note p {
   margin: 6px 0 0;
+}
+.not-found-page {
+  max-width: 720px;
+  margin: 48px auto;
+  text-align: center;
+}
+.not-found-page p:not(.eyebrow) {
+  margin: 16px auto 24px;
+  max-width: 520px;
+  color: var(--muted);
+  line-height: 1.7;
 }
 
 .payment-overlay {
@@ -1078,7 +1111,18 @@ body.light-theme .search-dialog {
     display: none;
     grid-column: 1 / -1;
   }
-  .site-header .main-nav.is-open { display: grid; gap: 12px; }
+  .site-header .main-nav.is-open {
+    display: grid;
+    gap: 4px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    background: var(--panel-alt);
+  }
+  .site-header .main-nav a {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .site-header .main-nav a:last-child { border-bottom: 0; }
   .header-controls { justify-self: end; }
 }
 
