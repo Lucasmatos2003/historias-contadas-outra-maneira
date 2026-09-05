@@ -34,6 +34,7 @@ Blog e portal de conteúdo construído com React + Vite, com foco em história a
 - `/submeter` — submissão com validação e cobrança Pix de R$ 5,00.
 - `/login` e `/cadastro` — autenticação de leitores e escritores.
 - `/perfil` — perfil do escritor autenticado.
+- `/escritor/:uid` — perfil público com artigos aprovados do escritor.
 
 ## Como visualizar
 
@@ -81,6 +82,8 @@ Para ativar o login:
 3. Cadastre essas variáveis na Vercel nos ambientes Production, Preview e Development.
 
 O cadastro cria um perfil na coleção `profiles` com a função `writer`. A rota `/submeter` exige login e envia o token do Firebase ao backend antes de aceitar o artigo. A cobrança continua dependendo da configuração do Mercado Pago.
+
+A submissão aceita uma URL HTTPS opcional para a imagem de capa. O servidor valida o formato antes de salvar, registra o nome público do autor no artigo e disponibiliza os textos aprovados no perfil público do escritor.
 
 O cadastro também envia um link de verificação para o e-mail informado. A área de submissão permanece bloqueada até o usuário clicar nesse link. Para testar, use um endereço que você controla e confira também a pasta de spam. O Firebase permite personalizar o remetente e o texto em **Authentication > Templates > Email address verification**.
 

@@ -14,7 +14,9 @@ export default async function handler(request, response) {
       content: article.content,
       category: article.category,
       author_email: article.authorEmail,
+      author_name: user.name || user.email?.split('@')[0] || 'Escritor',
       author_uid: user.uid,
+      cover_image: article.coverImage,
       status: process.env.MERCADOPAGO_ACCESS_TOKEN && !isAdmin ? 'pendente_pagamento' : 'pendente_revisao'
     });
 

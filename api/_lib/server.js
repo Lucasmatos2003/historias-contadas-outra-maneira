@@ -109,6 +109,8 @@ async function getArticlesByAuthor(uid) {
         title: data.title,
         excerpt: data.excerpt,
         category: data.category,
+        author_name: data.author_name || 'Escritor',
+        cover_image: data.cover_image || '',
         status: data.status,
         review_note: data.review_note || '',
         created_at: serializeDate(data.created_at),
@@ -117,6 +119,31 @@ async function getArticlesByAuthor(uid) {
       };
     })
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+}
+
+async function getPublicWriter(uid) {
+  const profileSnapshot = await firestore().collection('profiles').doc(uid).get();
+  if (!profileSnapshot.exists) return null;
+  const articleSnapshot = await firestore().collection('articles')
+    .where('author_uid', '==', uid)
+    .get();
+  const profile = profileSnapshot.data();
+  return {
+    uid,
+    displayName: profile.displayName || 'Escritor',
+    bio: profile.bio || '',
+    articles: articleSnapshot.docs.filter((document) => document.data().status === 'aprovado').map((document) => {
+      const data = document.data();
+      return {
+        id: document.id,
+        title: data.title,
+        excerpt: data.excerpt,
+        category: data.category,
+        cover_image: data.cover_image || '',
+        created_at: serializeDate(data.created_at)
+      };
+    }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  };
 }
 
 async function getAllArticles() {
@@ -130,6 +157,7 @@ async function getAllArticles() {
       content: data.content,
       category: data.category,
       author_email: data.author_email,
+      author_name: data.author_name || 'Escritor',
       author_uid: data.author_uid,
       status: data.status,
       created_at: data.created_at?.toDate?.().toISOString() || null,
@@ -185,6 +213,7 @@ function validateArticle(payload) {
   const excerpt = typeof payload?.excerpt === 'string' ? payload.excerpt.trim() : '';
   const content = typeof payload?.content === 'string' ? payload.content.trim() : '';
   const authorEmail = typeof payload?.authorEmail === 'string' ? payload.authorEmail.trim().toLowerCase() : '';
+  const coverImage = typeof payload?.coverImage === 'string' ? payload.coverImage.trim() : '';
   const category = payload?.category === 'historia-alternativa' || payload?.category === 'curiosidades-geradas'
     ? payload.category
     : '';
@@ -194,11 +223,12 @@ function validateArticle(payload) {
   if (content.length < 100 || content.length > 50000) throw new RequestError('O texto deve ter entre 100 e 50.000 caracteres.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(authorEmail)) throw new RequestError('Informe um e-mail válido.');
   if (!category) throw new RequestError('Selecione uma categoria válida.');
+  if (coverImage && (!/^https?:\/\/[^\s]{1,1900}$/i.test(coverImage))) throw new RequestError('Informe uma URL de imagem válida.');
   if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(`${title}${excerpt}${content}`)) {
     throw new RequestError('O conteúdo contém caracteres inválidos.');
   }
 
-  return { title, excerpt, content, authorEmail, category };
+  return { title, excerpt, content, authorEmail, category, coverImage };
 }
 
-export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, verifyAdmin, verifyMercadoPagoSignature, verifyUser };
+export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, verifyAdmin, verifyMercadoPagoSignature, verifyUser };
