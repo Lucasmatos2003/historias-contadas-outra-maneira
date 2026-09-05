@@ -753,6 +753,11 @@ h1 {
   border-left: 3px solid var(--gold);
   background: rgba(217,179,108,0.08);
 }
+.access-denied {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+}
 
 .admin-item {
   display: flex;

@@ -193,6 +193,7 @@ function ReviewAdmin({ user }) {
   const [filter, setFilter] = useState('pendente_revisao');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [accessDenied, setAccessDenied] = useState(false);
   const [reviewing, setReviewing] = useState(null);
   const [reviewNote, setReviewNote] = useState('');
   const load = async () => {
@@ -202,6 +203,10 @@ function ReviewAdmin({ user }) {
       const token = await user.getIdToken();
       const response = await fetch('/api/admin/articles', { headers: { Authorization: `Bearer ${token}` } });
       const result = await response.json();
+      if (response.status === 403) {
+        setAccessDenied(true);
+        return;
+      }
       if (!response.ok) throw new Error(result.error || 'Não foi possível carregar os artigos.');
       setItems(result.articles || []);
     } catch (loadError) {
@@ -211,6 +216,9 @@ function ReviewAdmin({ user }) {
     }
   };
   useEffect(() => { load(); }, [user]);
+  if (accessDenied) {
+    return <main className="container single-page"><section className="contact-card access-denied"><p className="eyebrow">Acesso restrito</p><h2>Você não é administrador</h2><p>Esta área está disponível somente para a conta administrativa configurada no servidor.</p></section></main>;
+  }
   const updateStatus = async (article, status) => {
     if (status === 'rejeitado' && reviewNote.trim().length < 10) {
       setError('Informe uma justificativa com pelo menos 10 caracteres.');
