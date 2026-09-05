@@ -177,8 +177,7 @@ function Admin({ articles, onChange }) {
   return <main className="container admin-layout"><section className="contact-card"><p className="eyebrow">CMS local</p><h2>{editing ? 'Editar artigo' : 'Novo artigo'}</h2><form className="contact-form" onSubmit={submit}><label>Título<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label><label>Resumo<textarea required rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label><label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>História Alternativa</option><option>Curiosidades Geradas</option></select></label><label>Conteúdo <span className="field-hint">Um parágrafo por linha</span><textarea required rows="7" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label><button className="button button-primary" type="submit">{editing ? 'Salvar alterações' : 'Publicar artigo'}</button></form></section><section className="admin-list"><p className="eyebrow">Publicados localmente</p>{articles.map((article) => <div className="admin-item" key={article.slug}><strong>{article.title}</strong><div><button className="save-button" onClick={() => edit(article)}>Editar</button><button className="save-button danger" onClick={() => remove(article.slug)}>Excluir</button></div></div>)}</section></main>;
 }
 
-function SubmitArticle() {
-  const { user } = useAuth();
+function SubmitArticle({ user }) {
   const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: 'historia-alternativa' });
   const [payment, setPayment] = useState(null);
   const [message, setMessage] = useState('');
@@ -344,7 +343,7 @@ function App() {
   else if (path === '/login') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage />;
   else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage mode="register" />;
   else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage />;
-  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle /> : <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} />) : <AuthPage />;
+  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} />) : <AuthPage />;
   else if (path === '/admin') content = <Admin articles={localArticles} onChange={setLocalArticles} />;
   return <Layout articles={localArticles} user={user} onLogout={() => signOut(auth)}>{content}</Layout>;
 }
