@@ -9,7 +9,7 @@ export const articles = [
     readingTime: '14 min',
     date: '14 de setembro',
     featured: true,
-    image: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1400&q=85',
     content: [
       'A história romana é frequentemente narrada como uma escalada irresistível para o domínio. Mas e se a derrota em Cartago tivesse sido o ponto de inflexão que separou a potência imperial de um futuro de rivalidades fragmentadas?',
       'A resposta não está apenas em mapas. Está na forma como cidades, comércio e religião se reorganizam quando uma superpotência não consegue manter a sua coerência.',

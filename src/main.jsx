@@ -124,7 +124,7 @@ function Home({ articles }) {
   return <main className="container home-layout"><div className="content-column">
     <section className="hero-article">
       <div className="hero-copy"><p className="eyebrow">Artigo principal</p><h2>{featured.title}</h2><p>{featured.excerpt}</p><div className="meta-row"><span>Por {featured.author}</span><span>{featured.readingTime} de leitura</span></div><a className="button button-primary" href={`/artigo/${featured.slug}`}>Ler artigo</a></div>
-      <div className="hero-visual"><div className="visual-card" style={{ backgroundImage: `linear-gradient(180deg, rgba(8,18,26,.25), rgba(7,11,17,.8)), url('${featured.image}')` }}><span>{featured.category}</span><strong>Impérios que não foram</strong></div></div>
+      <div className="hero-visual" aria-label={`Imagem do artigo: ${featured.title}`}><div className="visual-card" style={{ backgroundImage: `linear-gradient(180deg, rgba(8,18,26,.04) 15%, rgba(7,11,17,.9) 100%), url('${featured.image}')` }}><div className="visual-kicker"><span className="visual-line" />{featured.category}</div><strong>Um império<br />em outro rumo</strong><span className="visual-caption">Roma · Cartago · História alternativa</span></div></div>
     </section>
     <section className="section-head"><div><p className="eyebrow">Últimos textos</p><h3>Rumos não traçados</h3></div></section>
     <section className="article-grid">{articles.filter((article) => !article.featured).map((article, index) => <ArticleCard key={article.slug} article={article} index={index} />)}</section>
