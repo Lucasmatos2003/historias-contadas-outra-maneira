@@ -906,6 +906,7 @@ h1 {
 }
 .status-aprovado { border-color: #70be82; color: #b9efc1; }
 .status-rejeitado { border-color: #ef9b8e; color: #efb2a8; }
+.status-pendente_pagamento { border-color: #d9b36c; color: var(--gold-soft); }
 .review-item .review-note {
   margin-top: 16px;
 }

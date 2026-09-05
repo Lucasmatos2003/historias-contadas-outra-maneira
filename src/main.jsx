@@ -381,6 +381,7 @@ function AuthPage({ mode = 'login' }) {
 
 const reviewStatusDetails = {
   pendente_revisao: { label: 'Em revisão', description: 'Seu artigo está na fila para análise da equipe editorial.' },
+  pendente_pagamento: { label: 'Aguardando pagamento', description: 'Finalize o pagamento da submissão para que o artigo entre na fila de revisão.' },
   aprovado: { label: 'Aprovado', description: 'Seu artigo foi aprovado pela equipe editorial.' },
   rejeitado: { label: 'Rejeitado', description: 'Seu artigo precisa de ajustes antes de ser reenviado.' }
 };
