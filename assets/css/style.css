@@ -666,6 +666,34 @@ h1 {
   background: rgba(217,179,108,0.08);
 }
 .verification-box p { color: var(--muted); line-height: 1.7; }
+.my-articles {
+  margin-top: 30px;
+  padding: 24px;
+  background: rgba(18, 32, 48, 0.9);
+  border: 1px solid var(--line);
+}
+.my-articles .section-head { margin-top: 0; }
+.review-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+.review-item h4 { margin: 12px 0 8px; font-size: 1.35rem; }
+.review-item p { margin: 0 0 8px; color: var(--muted); line-height: 1.6; }
+.review-item small { color: var(--muted); }
+.review-status {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--gold);
+  color: var(--gold-soft);
+  font-size: 0.78rem;
+  text-align: center;
+}
+.status-aprovado { border-color: #70be82; color: #b9efc1; }
+.status-rejeitado { border-color: #ef9b8e; color: #efb2a8; }
 
 .payment-overlay {
   position: fixed;

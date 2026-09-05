@@ -36,6 +36,25 @@ async function getArticle(id) {
   return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
 }
 
+async function getArticlesByAuthor(uid) {
+  const snapshot = await firestore().collection('articles')
+    .where('author_uid', '==', uid)
+    .get();
+  return snapshot.docs
+    .map((document) => {
+      const data = document.data();
+      return {
+        id: document.id,
+        title: data.title,
+        excerpt: data.excerpt,
+        category: data.category,
+        status: data.status,
+        created_at: data.created_at?.toDate?.().toISOString() || null
+      };
+    })
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+}
+
 async function updateArticle(id, data) {
   await firestore().collection('articles').doc(id).update({
     ...data,
@@ -83,4 +102,4 @@ function validateArticle(payload) {
   return { title, excerpt, content, authorEmail, category };
 }
 
-export { createArticle, getArticle, mercadoPagoRequest, requireEnv, updateArticle, validateArticle, verifyUser };
+export { createArticle, getArticle, getArticlesByAuthor, mercadoPagoRequest, requireEnv, updateArticle, validateArticle, verifyUser };

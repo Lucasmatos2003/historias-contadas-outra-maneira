@@ -308,6 +308,27 @@ function AuthPage({ mode = 'login' }) {
 function Profile({ user, profile, onLogout, onVerified, registrationSuccess = false }) {
   const go = useNavigation();
   const [message, setMessage] = useState('');
+  const [myArticles, setMyArticles] = useState([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+  const [articlesError, setArticlesError] = useState('');
+  useEffect(() => {
+    let active = true;
+    const loadArticles = async () => {
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch('/api/articles/mine', { headers: { Authorization: `Bearer ${token}` } });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Não foi possível carregar seus artigos.');
+        if (active) setMyArticles(result.articles || []);
+      } catch (error) {
+        if (active) setArticlesError(error.message);
+      } finally {
+        if (active) setArticlesLoading(false);
+      }
+    };
+    loadArticles();
+    return () => { active = false; };
+  }, [user]);
   const resend = async () => {
     await sendEmailVerification(user);
     setMessage('E-mail de verificação reenviado. Confira sua caixa de entrada e a pasta de spam.');
@@ -316,7 +337,7 @@ function Profile({ user, profile, onLogout, onVerified, registrationSuccess = fa
     await onVerified();
     setMessage(auth.currentUser?.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
   };
-  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={onLogout}>Sair da conta</button></section></main>;
+  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={onLogout}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3></div></div>{articlesLoading && <p className="empty-state">Carregando seus artigos...</p>}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <article className="review-item" key={article.id}><div><span className="tag">{article.category}</span><h4>{article.title}</h4><p>{article.excerpt}</p><small>{article.created_at ? new Date(article.created_at).toLocaleDateString('pt-BR') : 'Data pendente'}</small></div><span className={`review-status status-${article.status}`}>{article.status === 'pendente_revisao' ? 'Em revisão' : article.status === 'aprovado' ? 'Aprovado' : article.status === 'rejeitado' ? 'Rejeitado' : article.status}</span></article>)}</section></main>;
 }
 
 function StaticPage({ type }) {
