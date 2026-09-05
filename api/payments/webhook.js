@@ -1,9 +1,10 @@
-import { getArticle, mercadoPagoRequest, updateArticle } from '../_lib/server.js';
+import { getArticle, mercadoPagoRequest, publicError, rateLimit, updateArticle } from '../_lib/server.js';
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' });
 
   try {
+    rateLimit(request, 'webhook', 120, 60 * 1000);
     const payload = request.body;
     const paymentId = payload?.data?.id || payload?.id;
     if (!paymentId) return response.json({ received: true });
@@ -24,6 +25,7 @@ export default async function handler(request, response) {
     await updateArticle(articleId, update);
     return response.json({ received: true });
   } catch (error) {
-    return response.status(500).json({ error: error.message });
+    const result = publicError(error, 'Não foi possível processar a notificação.');
+    return response.status(result.status).json({ error: result.message });
   }
 }

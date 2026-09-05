@@ -1,4 +1,4 @@
-import { getArticle, mercadoPagoRequest, updateArticle } from '../_lib/server.js';
+import { getArticle, mercadoPagoRequest, publicError, rateLimit, updateArticle, verifyUser } from '../_lib/server.js';
 
 export default async function handler(request, response) {
   if (request.method !== 'GET') return response.status(405).json({ error: 'Method not allowed' });
@@ -6,8 +6,11 @@ export default async function handler(request, response) {
   if (!id || !/^[A-Za-z0-9_-]{8,}$/.test(id)) return response.status(400).json({ error: 'Invalid article id' });
 
   try {
+    const user = await verifyUser(request);
+    rateLimit(request, `status:${user.uid}`, 30, 60 * 1000);
     const article = await getArticle(id);
     if (!article) return response.status(404).json({ error: 'Article not found' });
+    if (article.author_uid !== user.uid) return response.status(403).json({ error: 'Acesso não autorizado.' });
     if (article.status === 'pendente_revisao') return response.json({ status: article.status });
     if (!article.payment_id) return response.json({ status: article.status });
 
@@ -19,6 +22,7 @@ export default async function handler(request, response) {
 
     return response.json({ status: article.status, paymentStatus: payment.status });
   } catch (error) {
-    return response.status(500).json({ error: error.message });
+    const result = publicError(error, 'Não foi possível consultar o status.');
+    return response.status(result.status).json({ error: result.message });
   }
 }

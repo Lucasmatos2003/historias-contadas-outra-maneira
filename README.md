@@ -86,4 +86,6 @@ O cadastro também envia um link de verificação para o e-mail informado. A ár
 
 O valor de R$ 5,00 está fixado no endpoint de submissão para evitar que o cliente altere o preço. Em produção, adicione autenticação, rate limiting e validação da assinatura do webhook antes de abrir o fluxo ao público.
 
+As APIs autenticadas aplicam limites de requisições, validam o tamanho e o formato dos campos no servidor e não devolvem detalhes internos de Firebase ou Firestore. O painel administrativo exige o `ADMIN_UID`; usuários escritores não conseguem listar ou alterar artigos pela API administrativa. O rate limiting atual usa a memória da função serverless; para escalar horizontalmente, substitua o armazenamento por Vercel KV ou Redis compartilhado.
+
 Enquanto `MERCADOPAGO_ACCESS_TOKEN` não estiver configurado, o modo temporário salva os artigos diretamente como `pendente_revisao`, sem cobrança. Ao adicionar o token na Vercel, a cobrança Pix de R$ 5,00 passa a ser exigida automaticamente.

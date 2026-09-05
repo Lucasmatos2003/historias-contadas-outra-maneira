@@ -1,10 +1,11 @@
-import { createArticle, mercadoPagoRequest, updateArticle, validateArticle, verifyUser } from '../_lib/server.js';
+import { createArticle, mercadoPagoRequest, publicError, rateLimit, updateArticle, validateArticle, verifyUser } from '../_lib/server.js';
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' });
 
   try {
     const user = await verifyUser(request);
+    rateLimit(request, `submit:${user.uid}`, 5, 15 * 60 * 1000);
     const article = validateArticle({ ...request.body, authorEmail: user.email });
     const saved = await createArticle({
       title: article.title,
@@ -50,6 +51,7 @@ export default async function handler(request, response) {
       qrCodeBase64: payment.point_of_interaction?.transaction_data?.qr_code_base64 || null
     }, 201);
   } catch (error) {
-    return response.status(400).json({ error: error.message });
+    const result = publicError(error, 'Não foi possível enviar o artigo.');
+    return response.status(result.status).json({ error: result.message });
   }
 }

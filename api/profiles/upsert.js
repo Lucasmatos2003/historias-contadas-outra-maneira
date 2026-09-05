@@ -1,6 +1,7 @@
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { publicError, rateLimit } from '../_lib/server.js';
 
 function getAdminApp() {
   return getApps()[0] || initializeApp({
@@ -18,6 +19,10 @@ export default async function handler(request, response) {
     const header = request.headers.authorization || '';
     if (!header.startsWith('Bearer ')) return response.status(401).json({ error: 'Autenticação necessária.' });
     const user = await getAuth(getAdminApp()).verifyIdToken(header.slice(7));
+    rateLimit(request, `profile:${user.uid}`, 10, 15 * 60 * 1000);
+    if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body)) {
+      return response.status(400).json({ error: 'Dados de perfil inválidos.' });
+    }
     const displayName = typeof request.body?.displayName === 'string'
       ? request.body.displayName.trim().slice(0, 80)
       : '';
@@ -30,6 +35,7 @@ export default async function handler(request, response) {
     }, { merge: true });
     return response.status(204).end();
   } catch (error) {
-    return response.status(500).json({ error: error.message });
+    const result = publicError(error, 'Não foi possível salvar o perfil.');
+    return response.status(result.status).json({ error: result.message });
   }
 }

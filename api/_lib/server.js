@@ -8,6 +8,40 @@ function requireEnv(name) {
   return value;
 }
 
+class RequestError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function rateLimit(request, scope, limit, windowMs) {
+  const forwardedFor = request.headers['x-forwarded-for'];
+  const ip = (forwardedFor || request.headers['x-real-ip'] || 'unknown').split(',')[0].trim();
+  const key = `${scope}:${ip}`;
+  const now = Date.now();
+  const buckets = globalThis.__mentoraRateLimits || (globalThis.__mentoraRateLimits = new Map());
+  const bucket = buckets.get(key) || { count: 0, startedAt: now };
+  if (now - bucket.startedAt >= windowMs) {
+    bucket.count = 0;
+    bucket.startedAt = now;
+  }
+  bucket.count += 1;
+  buckets.set(key, bucket);
+  if (bucket.count > limit) {
+    throw new RequestError('Muitas tentativas. Aguarde alguns minutos e tente novamente.', 429);
+  }
+}
+
+function publicError(error, fallback = 'Não foi possível concluir a operação.') {
+  if (error instanceof RequestError) return { status: error.status, message: error.message };
+  if (error?.message === 'Autenticação necessária.') return { status: 401, message: error.message };
+  if (error?.message === 'Acesso de administrador necessário.') return { status: 403, message: error.message };
+  if (error?.status === 400) return { status: 400, message: error.message };
+  console.error(error);
+  return { status: 500, message: fallback };
+}
+
 function adminApp() {
   return getApps()[0] || initializeApp({
     credential: cert({
@@ -93,7 +127,11 @@ async function updateArticle(id, data) {
 async function verifyUser(request) {
   const header = request.headers.authorization || '';
   if (!header.startsWith('Bearer ')) throw new Error('Autenticação necessária.');
-  return getAuth(adminApp()).verifyIdToken(header.slice(7));
+  try {
+    return await getAuth(adminApp()).verifyIdToken(header.slice(7));
+  } catch {
+    throw new RequestError('Autenticação necessária.', 401);
+  }
 }
 
 async function verifyAdmin(request) {
@@ -119,6 +157,9 @@ async function mercadoPagoRequest(path, options = {}) {
 }
 
 function validateArticle(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new RequestError('Informe os dados do artigo.', 400);
+  }
   const title = typeof payload?.title === 'string' ? payload.title.trim() : '';
   const excerpt = typeof payload?.excerpt === 'string' ? payload.excerpt.trim() : '';
   const content = typeof payload?.content === 'string' ? payload.content.trim() : '';
@@ -127,13 +168,16 @@ function validateArticle(payload) {
     ? payload.category
     : '';
 
-  if (title.length < 10 || title.length > 160) throw new Error('O título deve ter entre 10 e 160 caracteres.');
-  if (excerpt.length < 20 || excerpt.length > 500) throw new Error('O resumo deve ter entre 20 e 500 caracteres.');
-  if (content.length < 100 || content.length > 50000) throw new Error('O texto deve ter entre 100 e 50.000 caracteres.');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authorEmail)) throw new Error('Informe um e-mail válido.');
-  if (!category) throw new Error('Selecione uma categoria válida.');
+  if (title.length < 10 || title.length > 160) throw new RequestError('O título deve ter entre 10 e 160 caracteres.');
+  if (excerpt.length < 20 || excerpt.length > 500) throw new RequestError('O resumo deve ter entre 20 e 500 caracteres.');
+  if (content.length < 100 || content.length > 50000) throw new RequestError('O texto deve ter entre 100 e 50.000 caracteres.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(authorEmail)) throw new RequestError('Informe um e-mail válido.');
+  if (!category) throw new RequestError('Selecione uma categoria válida.');
+  if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(`${title}${excerpt}${content}`)) {
+    throw new RequestError('O conteúdo contém caracteres inválidos.');
+  }
 
   return { title, excerpt, content, authorEmail, category };
 }
 
-export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, mercadoPagoRequest, requireEnv, updateArticle, validateArticle, verifyAdmin, verifyUser };
+export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, verifyAdmin, verifyUser };

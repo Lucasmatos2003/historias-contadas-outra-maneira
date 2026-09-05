@@ -260,7 +260,10 @@ function SubmitArticle({ user }) {
   useEffect(() => {
     if (!payment?.articleId) return undefined;
     const timer = window.setInterval(async () => {
-      const response = await fetch(`/api/articles/status?id=${encodeURIComponent(payment.articleId)}`);
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/articles/status?id=${encodeURIComponent(payment.articleId)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!response.ok) return;
       const result = await response.json();
       if (result.status === 'pendente_revisao') {
@@ -270,7 +273,7 @@ function SubmitArticle({ user }) {
       }
     }, 4000);
     return () => window.clearInterval(timer);
-  }, [payment?.articleId]);
+  }, [payment?.articleId, user]);
 
   const submit = async (event) => {
     event.preventDefault();

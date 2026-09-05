@@ -1,8 +1,9 @@
-import { getAllArticles, updateArticle, verifyAdmin } from '../_lib/server.js';
+import { getAllArticles, publicError, rateLimit, updateArticle, verifyAdmin } from '../_lib/server.js';
 
 export default async function handler(request, response) {
   try {
     const admin = await verifyAdmin(request);
+    rateLimit(request, `admin:${admin.uid}`, 60, 60 * 1000);
 
     if (request.method === 'GET') {
       return response.status(200).json({ articles: await getAllArticles() });
@@ -28,7 +29,7 @@ export default async function handler(request, response) {
     });
     return response.status(200).json({ id, status });
   } catch (error) {
-    const unauthorized = error.message === 'Autenticação necessária.' || error.message === 'Acesso de administrador necessário.';
-    return response.status(unauthorized ? 403 : 500).json({ error: error.message });
+    const result = publicError(error, 'Não foi possível processar a revisão.');
+    return response.status(result.status).json({ error: result.message });
   }
 }
