@@ -83,6 +83,14 @@ function serializeDate(value) {
   return value.toDate?.().toISOString() || null;
 }
 
+function validateProfilePhoto(photoURL) {
+  const value = typeof photoURL === 'string' ? photoURL.trim() : '';
+  if (value && !(/^https:\/\/[^\s]{1,1900}$/i.test(value) || /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]{1,700000}$/.test(value))) {
+    throw new RequestError('Envie uma imagem JPG, PNG ou WebP válida.', 400);
+  }
+  return value;
+}
+
 async function createArticle(data) {
   const reference = await firestore().collection('articles').add({
     ...data,
@@ -233,4 +241,4 @@ function validateArticle(payload) {
   return { title, excerpt, content, authorEmail, category, coverImage };
 }
 
-export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, verifyAdmin, verifyMercadoPagoSignature, verifyUser };
+export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, validateProfilePhoto, verifyAdmin, verifyMercadoPagoSignature, verifyUser };

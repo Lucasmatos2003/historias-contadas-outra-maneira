@@ -28,9 +28,19 @@ function useAuth() {
     if (!auth) return undefined;
     return onAuthStateChanged(auth, async (user) => {
       if (!user) return setState({ user: null, profile: null, loading: false });
+      let profile = { role: 'writer', displayName: user.displayName || '', photoURL: user.photoURL || '' };
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch('/api/profiles/upsert', { headers: { Authorization: `Bearer ${token}` } });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Não foi possível carregar o perfil.');
+        profile = { ...profile, ...result };
+      } catch (error) {
+        console.error('Não foi possível carregar o perfil salvo.', error);
+      }
       setState({
         user,
-        profile: { role: 'writer', displayName: user.displayName || '', photoURL: user.photoURL || '' },
+        profile,
         loading: false
       });
     });
@@ -231,10 +241,6 @@ function ReviewAdmin({ user }) {
       const result = await response.json();
       if (response.status === 403) {
         setAccessDenied(true);
-        return;
-      }
-      if (photoURL && !/^data:image\/(?:jpeg|png|webp);base64,/.test(photoURL) && !/^https:\/\//i.test(photoURL)) {
-        setMessage('Escolha uma imagem JPG, PNG ou WebP válida.');
         return;
       }
       if (!response.ok) throw new Error(result.error || 'Não foi possível carregar os artigos.');

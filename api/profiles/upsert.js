@@ -1,7 +1,7 @@
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { publicError, rateLimit } from '../_lib/server.js';
+import { publicError, rateLimit, validateProfilePhoto } from '../_lib/server.js';
 
 function getAdminApp() {
   return getApps()[0] || initializeApp({
@@ -14,12 +14,22 @@ function getAdminApp() {
 }
 
 export default async function handler(request, response) {
-  if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' });
+  if (!['GET', 'POST'].includes(request.method)) return response.status(405).json({ error: 'Method not allowed' });
   try {
     const header = request.headers.authorization || '';
     if (!header.startsWith('Bearer ')) return response.status(401).json({ error: 'Autenticação necessária.' });
     const user = await getAuth(getAdminApp()).verifyIdToken(header.slice(7));
-    rateLimit(request, `profile:${user.uid}`, 10, 15 * 60 * 1000);
+    rateLimit(request, `profile:${user.uid}`, 20, 15 * 60 * 1000);
+    const database = getFirestore(getAdminApp());
+    if (request.method === 'GET') {
+      const snapshot = await database.collection('profiles').doc(user.uid).get();
+      const profile = snapshot.exists ? snapshot.data() : {};
+      return response.status(200).json({
+        displayName: profile.displayName || user.name || user.email?.split('@')[0] || 'Escritor',
+        photoURL: profile.photoURL || '',
+        role: profile.role || 'writer'
+      });
+    }
     if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body)) {
       return response.status(400).json({ error: 'Dados de perfil inválidos.' });
     }
@@ -29,13 +39,7 @@ export default async function handler(request, response) {
     if (displayName.length < 2 || displayName.length > 80) {
       return response.status(400).json({ error: 'O nome público deve ter entre 2 e 80 caracteres.' });
     }
-    const photoURL = typeof request.body?.photoURL === 'string'
-      ? request.body.photoURL.trim()
-      : '';
-    if (photoURL && !(/^https:\/\/[^\s]{1,1900}$/i.test(photoURL) || /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]{1,700000}$/.test(photoURL))) {
-      return response.status(400).json({ error: 'Envie uma imagem JPG, PNG ou WebP válida.' });
-    }
-    const database = getFirestore(getAdminApp());
+    const photoURL = validateProfilePhoto(request.body?.photoURL);
     await database.collection('profiles').doc(user.uid).set({
       uid: user.uid,
       displayName: displayName || user.name || user.email?.split('@')[0] || 'Escritor',
