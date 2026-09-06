@@ -384,15 +384,11 @@ h1 {
   margin-top: 18px;
 }
 .author-photo {
-  min-height: 260px;
+  min-height: 280px;
   border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, rgba(217,179,108,0.2), rgba(7,13,17,0.7)), url("https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=80") center/cover no-repeat;
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--gold-soft);
+  background: url("/images/lucas-matos.jpg") center 20%/cover no-repeat;
   border: 1px solid rgba(240,220,192,0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 .author-copy { display: flex; flex-direction: column; justify-content: center; }
 .author-copy h2 { font-size: clamp(2.2rem, 3vw, 3rem); margin-bottom: 16px; }
