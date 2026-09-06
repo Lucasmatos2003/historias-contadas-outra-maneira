@@ -19,15 +19,18 @@ function Avatar({ name, photoURL, className = 'profile-avatar' }) {
 function useAuth() {
   const [state, setState] = useState({ user: null, profile: null, loading: Boolean(supabase) });
   const refreshUser = async () => {
-    if (!supabase) return;
+    if (!supabase) return null;
     const { data, error } = await supabase.auth.getUser();
     if (error) throw error;
-    setState((current) => ({ ...current, user: mapUser(data.user) }));
+    const mapped = mapUser(data.user);
+    setState((current) => ({ ...current, user: mapped }));
+    return mapped;
   };
   useEffect(() => {
     if (!supabase) return undefined;
     let active = true;
-    const update = async (user) => {
+    const update = async (userOrSession) => {
+      const user = userOrSession?.user || userOrSession;
       if (!user) return setState({ user: null, profile: null, loading: false });
       const mappedUser = mapUser(user);
       let profile = { role: 'writer', displayName: mappedUser.displayName, photoURL: mappedUser.photoURL };
@@ -42,11 +45,24 @@ function useAuth() {
       }
       if (active) setState({ user: mappedUser, profile, loading: false });
     };
-    supabase.auth.getSession().then(({ data }) => update(data.session?.user)).catch(() => {
-      if (active) setState({ user: null, profile: null, loading: false });
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        update(data.user);
+      } else {
+        supabase.auth.getSession().then(({ data: sessionData }) => update(sessionData.session?.user)).catch(() => {
+          if (active) setState({ user: null, profile: null, loading: false });
+        });
+      }
+    }).catch(() => {
+      supabase.auth.getSession().then(({ data: sessionData }) => update(sessionData.session?.user)).catch(() => {
+        if (active) setState({ user: null, profile: null, loading: false });
+      });
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, user) => {
-      setTimeout(() => update(user), 0);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => {
+        const user = session?.user ?? null;
+        update(user);
+      }, 0);
     });
     return () => {
       active = false;
@@ -481,7 +497,7 @@ function WriterArticleReview({ article }) {
   </article>;
 }
 
-function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, registrationSuccess = false }) {
+function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfileUpdated, registrationSuccess = false }) {
   const go = useNavigation();
   const [message, setMessage] = useState('');
   const [myArticles, setMyArticles] = useState([]);
@@ -490,6 +506,7 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
   const [displayName, setDisplayName] = useState(profile?.displayName || user.displayName || '');
   const [photoURL, setPhotoURL] = useState(profile?.photoURL || user.photoURL || '');
   const [savingProfile, setSavingProfile] = useState(false);
+  const isEmailVerified = Boolean(user.emailVerified || profile?.role === 'admin' || isAdmin);
   useEffect(() => {
     let active = true;
     const loadArticles = async () => {
@@ -539,12 +556,25 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     }
   };
   const resend = async () => {
-    await supabase.auth.resend({ type: 'signup', email: user.email });
-    setMessage('E-mail de verificação reenviado. Confira sua caixa de entrada e a pasta de spam.');
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email: user.email });
+      if (error) throw error;
+      setMessage('E-mail de verificação reenviado. Confira sua caixa de entrada e a pasta de spam.');
+    } catch (err) {
+      setMessage(err?.message || 'Erro ao reenviar e-mail.');
+    }
   };
   const verify = async () => {
-    await onVerified();
-    setMessage(user.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
+    try {
+      const refreshed = await onVerified?.();
+      if (refreshed?.emailVerified || profile?.role === 'admin' || isAdmin) {
+        setMessage('E-mail confirmado com sucesso.');
+      } else {
+        setMessage('Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
+      }
+    } catch (err) {
+      setMessage(err?.message || 'Não foi possível verificar no momento.');
+    }
   };
   const selectPhoto = (event) => {
     const file = event.target.files?.[0];
@@ -559,7 +589,7 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     reader.onerror = () => setMessage('Não foi possível carregar a imagem.');
     reader.readAsDataURL(file);
   };
-  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><label className="profile-photo-picker" title="Escolher foto de perfil"><Avatar name={user.displayName || user.email || 'P'} photoURL={photoURL || user.photoURL} /><input type="file" accept="image/jpeg,image/png,image/webp" onChange={selectPhoto} aria-label="Escolher foto de perfil" /></label><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span><small className="photo-hint">Clique na foto para alterar</small></div></section><form className="profile-name-form" onSubmit={saveProfile}><label>Nome público<input required minLength="2" maxLength="80" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como você quer aparecer nos artigos?" /></label><button className="button button-secondary" disabled={savingProfile}>{savingProfile ? 'Salvando...' : 'Salvar perfil'}</button></form>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
+  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><label className="profile-photo-picker" title="Escolher foto de perfil"><Avatar name={user.displayName || user.email || 'P'} photoURL={photoURL || user.photoURL} /><input type="file" accept="image/jpeg,image/png,image/webp" onChange={selectPhoto} aria-label="Escolher foto de perfil" /></label><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${isEmailVerified ? '' : 'tag-warning'}`}>{isEmailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span><small className="photo-hint">Clique na foto para alterar</small></div></section><form className="profile-name-form" onSubmit={saveProfile}><label>Nome público<input required minLength="2" maxLength="80" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como você quer aparecer nos artigos?" /></label><button className="button button-secondary" disabled={savingProfile}>{savingProfile ? 'Salvando...' : 'Salvar perfil'}</button></form>{!isEmailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!isEmailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
 }
 
 function StaticPage({ type }) {
@@ -618,16 +648,17 @@ function App() {
   }, [user]);
   const path = getPath();
   const registrationSuccess = new URLSearchParams(window.location.search).get('cadastro') === 'sucesso';
+  const isEmailVerified = Boolean(user?.emailVerified || profile?.role === 'admin' || isAdmin);
   if (loading) return <Layout articles={localArticles} profile={profile} isAdmin={false}><main className="container single-page"><section className="contact-card"><LoadingState label="Carregando sua conta..." /></section></main></Layout>;
   let content = <Home articles={localArticles} />;
   if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={localArticles} />;
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
-  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage />;
-  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage mode="register" />;
-  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage registrationSuccess={registrationSuccess} />;
-  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => supabase.auth.signOut()} />) : <AuthPage />;
+  else if (path === '/login') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage />;
+  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage mode="register" />;
+  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage registrationSuccess={registrationSuccess} />;
+  else if (path === '/submeter') content = user ? (isEmailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => supabase.auth.signOut()} />) : <AuthPage />;
   else if (path === '/admin') content = user ? <ReviewAdmin user={user} /> : <AuthPage />;
   else if (path.startsWith('/escritor/')) content = <PublicWriter uid={path.split('/')[2]} />;
   else if (!['/', '/login', '/cadastro', '/perfil', '/submeter', '/admin'].includes(path)) content = <NotFound />;

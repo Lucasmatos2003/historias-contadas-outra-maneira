@@ -15,8 +15,9 @@ async function getAccessToken() {
   return data.session?.access_token || null;
 }
 
-function mapUser(user) {
-  if (!user) return null;
+function mapUser(input) {
+  if (!input) return null;
+  const user = input.user || input;
   return {
     ...user,
     uid: user.id,

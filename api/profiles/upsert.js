@@ -25,12 +25,15 @@ export default async function handler(request, response) {
       return response.status(400).json({ error: 'O nome público deve ter entre 2 e 80 caracteres.' });
     }
     const photoURL = validateProfilePhoto(request.body?.photoURL);
+    const existing = await database.from('profiles').select('role').eq('uid', user.uid).maybeSingle();
+    const isAdmin = Boolean(process.env.ADMIN_UID && user.uid === process.env.ADMIN_UID);
+    const role = isAdmin || existing?.data?.role === 'admin' ? 'admin' : (existing?.data?.role || 'writer');
     const { error: profileError } = await database.from('profiles').upsert({
       uid: user.uid,
       display_name: displayName || user.name || user.email?.split('@')[0] || 'Escritor',
       photo_url: photoURL,
       email: user.email || '',
-      role: 'writer',
+      role,
       updated_at: new Date().toISOString()
     }, { onConflict: 'uid' });
     if (profileError) throw profileError;
