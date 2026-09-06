@@ -1,6 +1,4 @@
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
+import { createClient } from '@supabase/supabase-js';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 function requireEnv(name) {
@@ -63,24 +61,21 @@ function verifyMercadoPagoSignature(request, paymentId) {
   }
 }
 
-function adminApp() {
-  return getApps()[0] || initializeApp({
-    credential: cert({
-      projectId: requireEnv('FIREBASE_PROJECT_ID'),
-      clientEmail: requireEnv('FIREBASE_CLIENT_EMAIL'),
-      privateKey: requireEnv('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n')
-    })
-  });
-}
-
-function firestore() {
-  return getFirestore(adminApp());
+function supabaseAdmin() {
+  if (!globalThis.__supabaseAdmin) {
+    globalThis.__supabaseAdmin = createClient(
+      requireEnv('SUPABASE_URL'),
+      requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+  }
+  return globalThis.__supabaseAdmin;
 }
 
 function serializeDate(value) {
   if (!value) return null;
   if (typeof value === 'string') return value;
-  return value.toDate?.().toISOString() || null;
+  return value instanceof Date ? value.toISOString() : null;
 }
 
 function validateProfilePhoto(photoURL) {
@@ -92,102 +87,112 @@ function validateProfilePhoto(photoURL) {
 }
 
 async function createArticle(data) {
-  const reference = await firestore().collection('articles').add({
-    ...data,
-    created_at: FieldValue.serverTimestamp(),
-    updated_at: FieldValue.serverTimestamp()
-  });
-  return { id: reference.id, ...data };
+  const { data: article, error } = await supabaseAdmin()
+    .from('articles')
+    .insert(data)
+    .select('id')
+    .single();
+  if (error) throw error;
+  return { id: article.id, ...data };
 }
 
 async function getArticle(id) {
-  const snapshot = await firestore().collection('articles').doc(id).get();
-  return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
+  const { data, error } = await supabaseAdmin().from('articles').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 async function getArticlesByAuthor(uid) {
-  const snapshot = await firestore().collection('articles')
-    .where('author_uid', '==', uid)
-    .get();
-  return snapshot.docs
-    .map((document) => {
-      const data = document.data();
+  const { data, error } = await supabaseAdmin().from('articles')
+    .select('*')
+    .eq('author_uid', uid);
+  if (error) throw error;
+  return data
+    .map((article) => {
       return {
-        id: document.id,
-        title: data.title,
-        excerpt: data.excerpt,
-        category: data.category,
-        author_name: data.author_name || 'Escritor',
-        cover_image: data.cover_image || '',
-        status: data.status,
-        review_note: data.review_note || '',
-        created_at: serializeDate(data.created_at),
-        reviewed_at: serializeDate(data.reviewed_at),
-        updated_at: serializeDate(data.updated_at)
+        id: article.id,
+        title: article.title,
+        excerpt: article.excerpt,
+        category: article.category,
+        author_name: article.author_name || 'Escritor',
+        cover_image: article.cover_image || '',
+        status: article.status,
+        review_note: article.review_note || '',
+        created_at: serializeDate(article.created_at),
+        reviewed_at: serializeDate(article.reviewed_at),
+        updated_at: serializeDate(article.updated_at)
       };
     })
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
 }
 
 async function getPublicWriter(uid) {
-  const profileSnapshot = await firestore().collection('profiles').doc(uid).get();
-  if (!profileSnapshot.exists) return null;
-  const articleSnapshot = await firestore().collection('articles')
-    .where('author_uid', '==', uid)
-    .get();
-  const profile = profileSnapshot.data();
+  const [{ data: profile, error: profileError }, { data: articles, error: articleError }] = await Promise.all([
+    supabaseAdmin().from('profiles').select('*').eq('uid', uid).maybeSingle(),
+    supabaseAdmin().from('articles').select('*').eq('author_uid', uid).eq('status', 'aprovado')
+  ]);
+  if (profileError) throw profileError;
+  if (articleError) throw articleError;
+  if (!profile) return null;
   return {
     uid,
-    displayName: profile.displayName || 'Escritor',
-    photoURL: profile.photoURL || '',
+    displayName: profile.display_name || 'Escritor',
+    photoURL: profile.photo_url || '',
     bio: profile.bio || '',
-    articles: articleSnapshot.docs.filter((document) => document.data().status === 'aprovado').map((document) => {
-      const data = document.data();
+    articles: articles.map((article) => {
       return {
-        id: document.id,
-        title: data.title,
-        excerpt: data.excerpt,
-        category: data.category,
-        cover_image: data.cover_image || '',
-        created_at: serializeDate(data.created_at)
+        id: article.id,
+        title: article.title,
+        excerpt: article.excerpt,
+        category: article.category,
+        cover_image: article.cover_image || '',
+        created_at: serializeDate(article.created_at)
       };
     }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
   };
 }
 
 async function getAllArticles() {
-  const snapshot = await firestore().collection('articles').get();
-  return snapshot.docs.map((document) => {
-    const data = document.data();
+  const { data, error } = await supabaseAdmin().from('articles').select('*');
+  if (error) throw error;
+  return data.map((article) => {
     return {
-      id: document.id,
-      title: data.title,
-      excerpt: data.excerpt,
-      content: data.content,
-      category: data.category,
-      author_email: data.author_email,
-      author_name: data.author_name || 'Escritor',
-      author_uid: data.author_uid,
-      cover_image: data.cover_image || '',
-      status: data.status,
-      created_at: data.created_at?.toDate?.().toISOString() || null,
-      review_note: data.review_note || ''
+      id: article.id,
+      title: article.title,
+      excerpt: article.excerpt,
+      content: article.content,
+      category: article.category,
+      author_email: article.author_email,
+      author_name: article.author_name || 'Escritor',
+      author_uid: article.author_uid,
+      cover_image: article.cover_image || '',
+      status: article.status,
+      created_at: serializeDate(article.created_at),
+      review_note: article.review_note || ''
     };
   }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
 }
 
 async function updateArticle(id, data) {
-  await firestore().collection('articles').doc(id).update({
+  const { error } = await supabaseAdmin().from('articles').update({
     ...data,
-    updated_at: FieldValue.serverTimestamp()
-  });
+    updated_at: new Date().toISOString()
+  }).eq('id', id);
+  if (error) throw error;
 }
 
 async function verifyUser(request) {
   const header = request.headers.authorization || '';
   if (!header.startsWith('Bearer ')) throw new Error('Autenticação necessária.');
   try {
-    return await getAuth(adminApp()).verifyIdToken(header.slice(7));
+    const { data, error } = await supabaseAdmin().auth.getUser(header.slice(7));
+    if (error || !data.user) throw error || new Error('Usuário inválido.');
+    const user = data.user;
+    return {
+      ...user,
+      uid: user.id,
+      name: user.user_metadata?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Escritor'
+    };
   } catch {
     throw new RequestError('Autenticação necessária.', 401);
   }
@@ -241,4 +246,4 @@ function validateArticle(payload) {
   return { title, excerpt, content, authorEmail, category, coverImage };
 }
 
-export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, updateArticle, validateArticle, validateProfilePhoto, verifyAdmin, verifyMercadoPagoSignature, verifyUser };
+export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, supabaseAdmin, updateArticle, validateArticle, validateProfilePhoto, verifyAdmin, verifyMercadoPagoSignature, verifyUser };

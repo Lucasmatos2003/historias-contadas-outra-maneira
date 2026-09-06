@@ -1,33 +1,18 @@
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { publicError, rateLimit, validateProfilePhoto } from '../_lib/server.js';
-
-function getAdminApp() {
-  return getApps()[0] || initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    })
-  });
-}
+import { publicError, rateLimit, supabaseAdmin, validateProfilePhoto, verifyUser } from '../_lib/server.js';
 
 export default async function handler(request, response) {
   if (!['GET', 'POST'].includes(request.method)) return response.status(405).json({ error: 'Method not allowed' });
   try {
-    const header = request.headers.authorization || '';
-    if (!header.startsWith('Bearer ')) return response.status(401).json({ error: 'Autenticação necessária.' });
-    const user = await getAuth(getAdminApp()).verifyIdToken(header.slice(7));
+    const user = await verifyUser(request);
     rateLimit(request, `profile:${user.uid}`, 20, 15 * 60 * 1000);
-    const database = getFirestore(getAdminApp());
+    const database = supabaseAdmin();
     if (request.method === 'GET') {
-      const snapshot = await database.collection('profiles').doc(user.uid).get();
-      const profile = snapshot.exists ? snapshot.data() : {};
+      const { data: profile, error } = await database.from('profiles').select('*').eq('uid', user.uid).maybeSingle();
+      if (error) throw error;
       return response.status(200).json({
-        displayName: profile.displayName || user.name || user.email?.split('@')[0] || 'Escritor',
-        photoURL: profile.photoURL || '',
-        role: profile.role || 'writer'
+        displayName: profile?.display_name || user.name || user.email?.split('@')[0] || 'Escritor',
+        photoURL: profile?.photo_url || '',
+        role: profile?.role || 'writer'
       });
     }
     if (!request.body || typeof request.body !== 'object' || Array.isArray(request.body)) {
@@ -40,23 +25,19 @@ export default async function handler(request, response) {
       return response.status(400).json({ error: 'O nome público deve ter entre 2 e 80 caracteres.' });
     }
     const photoURL = validateProfilePhoto(request.body?.photoURL);
-    await database.collection('profiles').doc(user.uid).set({
+    const { error: profileError } = await database.from('profiles').upsert({
       uid: user.uid,
-      displayName: displayName || user.name || user.email?.split('@')[0] || 'Escritor',
-      photoURL,
+      display_name: displayName || user.name || user.email?.split('@')[0] || 'Escritor',
+      photo_url: photoURL,
       email: user.email || '',
       role: 'writer',
-      updated_at: FieldValue.serverTimestamp()
-    }, { merge: true });
-    const articles = await database.collection('articles').where('author_uid', '==', user.uid).get();
-    if (!articles.empty) {
-      const batch = database.batch();
-      articles.docs.forEach((article) => batch.update(article.ref, {
-        author_name: displayName,
-        updated_at: FieldValue.serverTimestamp()
-      }));
-      await batch.commit();
-    }
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'uid' });
+    if (profileError) throw profileError;
+    const { error: articlesError } = await database.from('articles')
+      .update({ author_name: displayName, updated_at: new Date().toISOString() })
+      .eq('author_uid', user.uid);
+    if (articlesError) throw articlesError;
     return response.status(204).end();
   } catch (error) {
     const result = publicError(error, 'Não foi possível salvar o perfil.');

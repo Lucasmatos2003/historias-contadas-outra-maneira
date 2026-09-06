@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createUserWithEmailAndPassword, onAuthStateChanged, reload, sendEmailVerification, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
 import { articles, categoryInfo } from './data';
-import { auth, isConfigured } from './firebase';
+import { getAccessToken, isConfigured, mapUser, supabase } from './supabase';
 import '../assets/css/style.css';
 import './responsive.css';
 
@@ -18,19 +17,22 @@ function Avatar({ name, photoURL, className = 'profile-avatar' }) {
 }
 
 function useAuth() {
-  const [state, setState] = useState({ user: null, profile: null, loading: Boolean(auth) });
+  const [state, setState] = useState({ user: null, profile: null, loading: Boolean(supabase) });
   const refreshUser = async () => {
-    if (!auth?.currentUser) return;
-    await reload(auth.currentUser);
-    setState((current) => ({ ...current, user: auth.currentUser }));
+    if (!supabase) return;
+    const { data, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    setState((current) => ({ ...current, user: mapUser(data.user) }));
   };
   useEffect(() => {
-    if (!auth) return undefined;
-    return onAuthStateChanged(auth, async (user) => {
+    if (!supabase) return undefined;
+    let active = true;
+    const update = async (user) => {
       if (!user) return setState({ user: null, profile: null, loading: false });
-      let profile = { role: 'writer', displayName: user.displayName || '', photoURL: user.photoURL || '' };
+      const mappedUser = mapUser(user);
+      let profile = { role: 'writer', displayName: mappedUser.displayName, photoURL: mappedUser.photoURL };
       try {
-        const token = await user.getIdToken();
+        const token = await getAccessToken();
         const response = await fetch('/api/profiles/upsert', { headers: { Authorization: `Bearer ${token}` } });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Não foi possível carregar o perfil.');
@@ -38,22 +40,29 @@ function useAuth() {
       } catch (error) {
         console.error('Não foi possível carregar o perfil salvo.', error);
       }
-      setState({
-        user,
-        profile,
-        loading: false
-      });
+      if (active) setState({ user: mappedUser, profile, loading: false });
+    };
+    supabase.auth.getSession().then(({ data }) => update(data.session?.user)).catch(() => {
+      if (active) setState({ user: null, profile: null, loading: false });
     });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, user) => {
+      setTimeout(() => update(user), 0);
+    });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
   const updateProfileState = (data) => setState((current) => ({
     ...current,
-    profile: { ...current.profile, ...data }
+    profile: { ...current.profile, ...data },
+    user: current.user ? { ...current.user, displayName: data.displayName ?? current.user.displayName, photoURL: data.photoURL ?? current.user.photoURL } : current.user
   }));
   return { ...state, refreshUser, updateProfileState };
 }
 
 function AuthNotice() {
-  return <div className="auth-notice" role="status">O login ainda não foi configurado no Firebase. Crie um app Web no Firebase Console e adicione as variáveis VITE_FIREBASE_* na Vercel.</div>;
+  return <div className="auth-notice" role="status">O login ainda não foi configurado no Supabase. Crie um projeto e adicione VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY na Vercel.</div>;
 }
 
 function useNavigation() {
@@ -236,7 +245,7 @@ function ReviewAdmin({ user }) {
     setLoading(true);
     setError('');
     try {
-      const token = await user.getIdToken();
+      const token = await getAccessToken();
       const response = await fetch('/api/admin/articles', { headers: { Authorization: `Bearer ${token}` } });
       const result = await response.json();
       if (response.status === 403) {
@@ -261,7 +270,7 @@ function ReviewAdmin({ user }) {
       return;
     }
     try {
-      const token = await user.getIdToken();
+      const token = await getAccessToken();
       const response = await fetch('/api/admin/articles', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -311,7 +320,7 @@ function SubmitArticle({ user }) {
   useEffect(() => {
     if (!payment?.articleId) return undefined;
     const timer = window.setInterval(async () => {
-      const token = await user.getIdToken();
+      const token = await getAccessToken();
       const response = await fetch(`/api/articles/status?id=${encodeURIComponent(payment.articleId)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -331,7 +340,7 @@ function SubmitArticle({ user }) {
     setLoading(true);
     setMessage('');
     try {
-      const token = await user.getIdToken();
+      const token = await getAccessToken();
       const response = await fetch('/api/articles/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -382,7 +391,7 @@ function SubmitArticle({ user }) {
   </main>;
 }
 
-function AuthPage({ mode = 'login' }) {
+function AuthPage({ mode = 'login', registrationSuccess = false }) {
   const go = useNavigation();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
@@ -390,38 +399,50 @@ function AuthPage({ mode = 'login' }) {
   const isLogin = mode === 'login';
   const submit = async (event) => {
     event.preventDefault();
-    if (!auth) return setError('Configure primeiro o Firebase Web SDK.');
+    if (!supabase) return setError('Configure primeiro o Supabase.');
     setLoading(true); setError('');
     try {
-      const credential = isLogin
-        ? await signInWithEmailAndPassword(auth, form.email, form.password)
-        : await createUserWithEmailAndPassword(auth, form.email, form.password);
-      if (!isLogin) {
-        await updateProfile(credential.user, { displayName: form.name.trim() });
-        await sendEmailVerification(credential.user);
-        const token = await credential.user.getIdToken();
-        const profileResponse = await fetch('/api/profiles/upsert', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ displayName: form.name.trim() })
+      let user;
+      if (isLogin) {
+        const result = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
+        if (result.error) throw result.error;
+        user = result.data.user;
+      } else {
+        const result = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: { data: { display_name: form.name.trim() } }
         });
-        if (!profileResponse.ok) throw new Error('Não foi possível salvar o perfil.');
+        if (result.error) throw result.error;
+        user = result.data.user;
+        if (result.data.session) {
+          const token = await getAccessToken();
+          const profileResponse = await fetch('/api/profiles/upsert', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ displayName: form.name.trim() })
+          });
+          if (!profileResponse.ok) throw new Error('Não foi possível salvar o perfil.');
+        }
       }
+      if (!user) throw new Error('Não foi possível criar a conta.');
       go(isLogin ? '/perfil' : '/perfil?cadastro=sucesso');
     } catch (submitError) {
       const messages = {
-        'auth/email-already-in-use': 'Este e-mail já possui uma conta. Use “Já tenho uma conta” para entrar.',
-        'auth/invalid-credential': 'E-mail ou senha incorretos.',
-        'auth/invalid-email': 'Informe um e-mail válido.',
-        'auth/weak-password': 'A senha precisa ter pelo menos 6 caracteres.',
-        'auth/network-request-failed': 'Não foi possível conectar ao Firebase. Verifique sua internet.',
-        'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'A chave pública do Firebase está inválida na Vercel.'
+        user_already_exists: 'Este e-mail já possui uma conta. Use “Já tenho uma conta” para entrar.',
+        invalid_credentials: 'E-mail ou senha incorretos.',
+        email_not_confirmed: 'Confirme seu e-mail antes de entrar.',
+        email_address_invalid: 'Informe um e-mail válido.',
+        weak_password: 'A senha precisa ter pelo menos 6 caracteres.',
+        over_request_rate_limit: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+        auth_network_request_failed: 'Não foi possível conectar ao Supabase. Verifique sua internet.'
       };
       setError(messages[submitError.code] || submitError.message || 'Não foi possível concluir. Verifique seus dados e tente novamente.');
     } finally { setLoading(false); }
   };
   return <main className="container single-page"><section className="contact-card auth-card">
     <p className="eyebrow">Área do escritor</p><h2>{isLogin ? 'Entrar na sua conta' : 'Criar cadastro de escritor'}</h2>
+    {registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Confirme seu e-mail antes de entrar.</p>}
     {!isConfigured && <AuthNotice />}
     <form className="contact-form" onSubmit={submit}>
       {!isLogin && <label>Nome público<input required minLength="2" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>}
@@ -473,7 +494,7 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     let active = true;
     const loadArticles = async () => {
       try {
-        const token = await user.getIdToken();
+        const token = await getAccessToken();
         const response = await fetch('/api/articles/mine', { headers: { Authorization: `Bearer ${token}` } });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Não foi possível carregar seus artigos.');
@@ -500,8 +521,8 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     }
     setSavingProfile(true);
     try {
-      await updateProfile(user, { displayName: name });
-      const token = await user.getIdToken();
+      await supabase.auth.updateUser({ data: { display_name: name } });
+      const token = await getAccessToken();
       const response = await fetch('/api/profiles/upsert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -518,12 +539,12 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     }
   };
   const resend = async () => {
-    await sendEmailVerification(user);
+    await supabase.auth.resend({ type: 'signup', email: user.email });
     setMessage('E-mail de verificação reenviado. Confira sua caixa de entrada e a pasta de spam.');
   };
   const verify = async () => {
     await onVerified();
-    setMessage(auth.currentUser?.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
+    setMessage(user.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
   };
   const selectPhoto = (event) => {
     const file = event.target.files?.[0];
@@ -588,7 +609,7 @@ function App() {
       setIsAdmin(false);
       return undefined;
     }
-    user.getIdToken()
+    getAccessToken()
       .then((token) => fetch('/api/admin/access', { headers: { Authorization: `Bearer ${token}` } }))
       .then((response) => response.ok ? response.json() : { isAdmin: false })
       .then((result) => { if (active) setIsAdmin(Boolean(result.isAdmin)); })
@@ -603,14 +624,14 @@ function App() {
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
-  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => signOut(auth)} /> : <AuthPage />;
-  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => signOut(auth)} /> : <AuthPage mode="register" />;
-  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => signOut(auth)} /> : <AuthPage />;
-  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => signOut(auth)} />) : <AuthPage />;
+  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage />;
+  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage mode="register" />;
+  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage registrationSuccess={registrationSuccess} />;
+  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => supabase.auth.signOut()} />) : <AuthPage />;
   else if (path === '/admin') content = user ? <ReviewAdmin user={user} /> : <AuthPage />;
   else if (path.startsWith('/escritor/')) content = <PublicWriter uid={path.split('/')[2]} />;
   else if (!['/', '/login', '/cadastro', '/perfil', '/submeter', '/admin'].includes(path)) content = <NotFound />;
-  return <Layout articles={localArticles} user={user} profile={profile} isAdmin={isAdmin} onLogout={() => signOut(auth)}>{content}</Layout>;
+  return <Layout articles={localArticles} user={user} profile={profile} isAdmin={isAdmin} onLogout={() => supabase.auth.signOut()}>{content}</Layout>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

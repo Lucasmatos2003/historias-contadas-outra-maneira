@@ -30,7 +30,7 @@ Blog e portal de conteúdo construído com React + Vite, com foco em história a
 - `/artigo/:slug` — leitura individual de um artigo.
 - `/sobre` — sobre o autor.
 - `/contato` — formulário de contato.
-- `/admin` — painel administrativo protegido para revisar artigos do Firestore.
+- `/admin` — painel administrativo protegido para revisar artigos do Supabase.
 - `/submeter` — submissão com validação e cobrança Pix de R$ 5,00.
 - `/login` e `/cadastro` — autenticação de leitores e escritores.
 - `/perfil` — perfil do escritor autenticado.
@@ -57,9 +57,9 @@ O script de build chama o Vite diretamente pelo Node para evitar problemas de pe
 
 ## Painel administrativo
 
-O `/admin` exige login no Firebase e valida o UID do token no servidor contra `ADMIN_UID`. Configure essa variável com o UID da conta administrativa em todos os ambientes da Vercel. O painel lista os artigos reais do Firestore, permite filtrar por status, aprovar e rejeitar textos; rejeições exigem uma justificativa que aparece no perfil do escritor.
+O `/admin` exige login no Supabase e valida o UID do token no servidor contra `ADMIN_UID`. Configure essa variável com o UUID da conta administrativa em todos os ambientes de deploy. O painel lista os artigos reais do Supabase, permite filtrar por status, aprovar e rejeitar textos; rejeições exigem uma justificativa que aparece no perfil do escritor.
 
-Para descobrir o UID, abra **Firebase Console > Authentication > Users**, copie o UID do administrador e salve-o como `ADMIN_UID`. Não confie em um campo `role` enviado pelo navegador: a autorização é sempre feita no endpoint server-side.
+Para descobrir o UID, abra **Supabase Dashboard > Authentication > Users**, copie o UUID do administrador e salve-o como `ADMIN_UID`. Não confie em um campo `role` enviado pelo navegador: a autorização é sempre feita no endpoint server-side.
 
 ## Deploy
 
@@ -67,34 +67,34 @@ O projeto já inclui `netlify.toml` e `vercel.json`. No Netlify ou Vercel, use o
 
 ## Submissão paga via Pix
 
-O fluxo de `/submeter` grava o artigo como `pendente_pagamento` no Cloud Firestore, cria uma cobrança Pix no Mercado Pago, exibe QR Code/Copia e Cola e consulta o status até o webhook ou polling confirmar o pagamento. Os tokens e credenciais ficam somente nas funções serverless.
+O fluxo de `/submeter` grava o artigo como `pendente_pagamento` no Supabase, cria uma cobrança Pix no Mercado Pago, exibe QR Code/Copia e Cola e consulta o status até o webhook ou polling confirmar o pagamento. Os tokens e credenciais ficam somente no servidor.
 
-1. Crie um projeto no [Firebase Console](https://console.firebase.google.com/), ative o Cloud Firestore e gere uma conta de serviço.
-2. Configure as variáveis de [.env.example](./.env.example) no Vercel. Preserve as quebras de linha da chave privada usando `\n`.
+1. Crie um projeto no [Supabase](https://supabase.com/), ative o provedor de e-mail/senha e execute [`supabase/schema.sql`](./supabase/schema.sql) no SQL Editor.
+2. Configure as variáveis de [.env.example](./.env.example) no ambiente de deploy. A `SUPABASE_SERVICE_ROLE_KEY` deve existir somente no servidor e nunca ser prefixada com `VITE_`.
 3. Configure o endpoint do webhook como `/api/payments/webhook` no Mercado Pago e salve o segredo de assinatura em `MERCADOPAGO_WEBHOOK_SECRET`.
 
 ### Login e perfil do escritor
 
 Para ativar o login:
 
-1. No Firebase Console, abra **Authentication > Sign-in method** e ative **E-mail/senha**.
-2. Em **Configurações do projeto > Seus apps**, registre um aplicativo Web e copie as seis configurações para as variáveis `VITE_FIREBASE_*` do `.env.example`.
-3. Cadastre essas variáveis na Vercel nos ambientes Production, Preview e Development.
+1. No Supabase Dashboard, abra **Authentication > Providers** e ative **Email**.
+2. Em **Project Settings > API**, copie a URL e a chave anon para `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+3. Cadastre também `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `ADMIN_UID` somente no ambiente server-side.
 
-O cadastro cria um perfil na coleção `profiles` com a função `writer`. A rota `/submeter` exige login e envia o token do Firebase ao backend antes de aceitar o artigo. A cobrança continua dependendo da configuração do Mercado Pago.
+O cadastro cria um perfil na tabela `profiles` com a função `writer`. A rota `/submeter` exige login e envia o access token do Supabase ao backend antes de aceitar o artigo. A cobrança continua dependendo da configuração do Mercado Pago.
 
 A submissão aceita uma URL HTTPS opcional para a imagem de capa. O servidor valida o formato antes de salvar, registra o nome público do autor no artigo e disponibiliza os textos aprovados no perfil público do escritor.
 
-O cadastro também envia um link de verificação para o e-mail informado. A área de submissão permanece bloqueada até o usuário clicar nesse link. Para testar, use um endereço que você controla e confira também a pasta de spam. O Firebase permite personalizar o remetente e o texto em **Authentication > Templates > Email address verification**.
+O cadastro também envia um link de verificação para o e-mail informado. A área de submissão permanece bloqueada até o usuário clicar nesse link. Para testar, use um endereço que você controla e confira também a pasta de spam. O remetente e o template podem ser personalizados em **Authentication > Email Templates**.
 
 O valor de R$ 5,00 está fixado no endpoint de submissão para evitar que o cliente altere o preço. Em produção, adicione autenticação, rate limiting e validação da assinatura do webhook antes de abrir o fluxo ao público.
 
-As APIs autenticadas aplicam limites de requisições, validam o tamanho e o formato dos campos no servidor e não devolvem detalhes internos de Firebase ou Firestore. O painel administrativo exige o `ADMIN_UID`; usuários escritores não conseguem listar ou alterar artigos pela API administrativa. O rate limiting atual usa a memória da função serverless; para escalar horizontalmente, substitua o armazenamento por Vercel KV ou Redis compartilhado.
+As APIs autenticadas aplicam limites de requisições, validam o tamanho e o formato dos campos no servidor e não devolvem detalhes internos do Supabase. O painel administrativo exige o `ADMIN_UID`; usuários escritores não conseguem listar ou alterar artigos pela API administrativa. O rate limiting atual usa a memória da função serverless; para escalar horizontalmente, substitua o armazenamento por Vercel KV ou Redis compartilhado.
 
 Enquanto `MERCADOPAGO_ACCESS_TOKEN` não estiver configurado, o modo temporário salva os artigos diretamente como `pendente_revisao`, sem cobrança. A conta cujo UID corresponde a `ADMIN_UID` também é isenta da taxa e entra diretamente em revisão. Se a criação da cobrança falhar, o artigo é marcado como `pagamento_erro`, evitando registros presos em `pendente_pagamento`. Webhooks sem assinatura válida são rejeitados.
 ## Deploy na Hostinger
 
-Este projeto usa um servidor Node próprio para servir o `dist/` e encaminhar as rotas `/api/...` para os handlers do Firebase e Mercado Pago.
+Este projeto usa um servidor Node próprio para servir o `dist/` e encaminhar as rotas `/api/...` para os handlers do Supabase e Mercado Pago.
 
 Configure a aplicação Node com:
 
@@ -109,12 +109,11 @@ Após a implantação, verifique `https://seu-dominio/api/health`. A resposta es
 
 As variáveis server-side devem ser cadastradas no painel da Hostinger, sem aspas:
 
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_CLIENT_EMAIL`
-- `FIREBASE_PRIVATE_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 - `MERCADOPAGO_ACCESS_TOKEN`
 - `MERCADOPAGO_WEBHOOK_SECRET`
 - `ADMIN_UID`
 - `PUBLIC_APP_URL=https://historiasdeoutramaneira.com.br`
 
-As variáveis `VITE_FIREBASE_*` continuam sendo usadas no build do frontend.
+As variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` são usadas no build do frontend. A chave de service role nunca deve ser exposta ao navegador.
