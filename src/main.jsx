@@ -13,6 +13,10 @@ function LoadingState({ label = 'Carregando...' }) {
   return <div className="loading-state" role="status" aria-live="polite"><span className="loading-spinner" aria-hidden="true" />{label}</div>;
 }
 
+function Avatar({ name, photoURL, className = 'profile-avatar' }) {
+  return <div className={className}>{photoURL ? <img src={photoURL} alt="" /> : name.slice(0, 1).toUpperCase()}</div>;
+}
+
 function useAuth() {
   const [state, setState] = useState({ user: null, profile: null, loading: Boolean(auth) });
   const refreshUser = async () => {
@@ -26,7 +30,7 @@ function useAuth() {
       if (!user) return setState({ user: null, profile: null, loading: false });
       setState({
         user,
-        profile: { role: 'writer', displayName: user.displayName || '' },
+        profile: { role: 'writer', displayName: user.displayName || '', photoURL: user.photoURL || '' },
         loading: false
       });
     });
@@ -94,7 +98,7 @@ function Layout({ children, articles, user, isAdmin, onLogout }) {
         <div className="header-controls">
           <button className="icon-button" aria-label="Abrir busca" onClick={() => setSearchOpen(true)}>⌕</button>
           <button className="icon-button" aria-label="Alternar tema" onClick={() => setLight((value) => !value)}>◐</button>
-          {user ? <button className="profile-chip" onClick={() => go('/perfil')} title="Abrir perfil">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</button> : <a className="auth-link" href="/login" onClick={link('/login')}>Entrar</a>}
+          {user ? <button className="profile-chip" onClick={() => go('/perfil')} title="Abrir perfil"><Avatar name={user.displayName || user.email || 'P'} photoURL={user.photoURL} className="profile-chip-avatar" /></button> : <a className="auth-link" href="/login" onClick={link('/login')}>Entrar</a>}
           {user && <button className="icon-button" aria-label="Sair" onClick={logout}>↪</button>}
           <button className="icon-button menu-toggle" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen((value) => !value)}>☰</button>
         </div>
@@ -220,6 +224,10 @@ function ReviewAdmin({ user }) {
       const result = await response.json();
       if (response.status === 403) {
         setAccessDenied(true);
+        return;
+      }
+      if (photoURL && !/^https:\/\/[^\s]{1,1900}$/i.test(photoURL.trim())) {
+        setMessage('A foto precisa usar uma URL HTTPS válida.');
         return;
       }
       if (!response.ok) throw new Error(result.error || 'Não foi possível carregar os artigos.');
@@ -446,6 +454,7 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
   const [articlesLoading, setArticlesLoading] = useState(true);
   const [articlesError, setArticlesError] = useState('');
   const [displayName, setDisplayName] = useState(profile?.displayName || user.displayName || '');
+  const [photoURL, setPhotoURL] = useState(profile?.photoURL || user.photoURL || '');
   const [savingProfile, setSavingProfile] = useState(false);
   useEffect(() => {
     let active = true;
@@ -465,7 +474,10 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     loadArticles();
     return () => { active = false; };
   }, [user]);
-  useEffect(() => setDisplayName(profile?.displayName || user.displayName || ''), [profile?.displayName, user.displayName]);
+  useEffect(() => {
+    setDisplayName(profile?.displayName || user.displayName || '');
+    setPhotoURL(profile?.photoURL || user.photoURL || '');
+  }, [profile?.displayName, profile?.photoURL, user.displayName, user.photoURL]);
   const saveProfile = async (event) => {
     event.preventDefault();
     const name = displayName.trim();
@@ -475,17 +487,17 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     }
     setSavingProfile(true);
     try {
-      await updateProfile(user, { displayName: name });
+      await updateProfile(user, { displayName: name, photoURL: photoURL.trim() || null });
       const token = await user.getIdToken();
       const response = await fetch('/api/profiles/upsert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ displayName: name })
+        body: JSON.stringify({ displayName: name, photoURL: photoURL.trim() })
       });
       const result = response.status === 204 ? null : await response.json();
       if (!response.ok) throw new Error(result?.error || 'Não foi possível atualizar o nome.');
       onProfileUpdated?.(name);
-      setMessage('Nome público atualizado com sucesso.');
+      setMessage('Perfil atualizado com sucesso.');
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -500,7 +512,7 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
     await onVerified();
     setMessage(auth.currentUser?.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
   };
-  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section><form className="profile-name-form" onSubmit={saveProfile}><label>Nome público<input required minLength="2" maxLength="80" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como você quer aparecer nos artigos?" /></label><button className="button button-secondary" disabled={savingProfile}>{savingProfile ? 'Salvando...' : 'Salvar nome público'}</button></form>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
+  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><Avatar name={user.displayName || user.email || 'P'} photoURL={user.photoURL} /><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section><form className="profile-name-form" onSubmit={saveProfile}><label>Nome público<input required minLength="2" maxLength="80" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como você quer aparecer nos artigos?" /></label><label>Foto de perfil (URL HTTPS)<input type="url" value={photoURL} onChange={(event) => setPhotoURL(event.target.value)} placeholder="https://exemplo.com/foto.jpg" /><span className="field-hint">Opcional. Deixe vazio para remover a foto.</span></label><button className="button button-secondary" disabled={savingProfile}>{savingProfile ? 'Salvando...' : 'Salvar perfil'}</button></form>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
 }
 
 function StaticPage({ type }) {
@@ -530,7 +542,7 @@ function PublicWriter({ uid }) {
   }, [uid]);
   if (loading) return <main className="container single-page"><section className="contact-card"><LoadingState label="Carregando perfil..." /></section></main>;
   if (error || !writer) return <NotFound />;
-  return <main className="container single-page writer-public-page"><section className="writer-public-hero"><div className="profile-avatar">{writer.displayName.slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil público</p><h2>{writer.displayName}</h2><p>{writer.bio || 'Escritor colaborador da revista Histórias Contadas de Outra Maneira.'}</p></div></section><section className="writer-public-articles"><div className="section-head"><div><p className="eyebrow">Publicações</p><h3>Artigos aprovados</h3></div></div>{!writer.articles.length && <p className="empty-state">Este escritor ainda não possui artigos publicados.</p>}{writer.articles.map((article) => <article className="writer-public-card" key={article.id}>{article.cover_image && <img src={article.cover_image} alt="" /> }<div><span className="tag">{article.category}</span><h4>{article.title}</h4><p>{article.excerpt}</p><small>{article.created_at ? new Date(article.created_at).toLocaleDateString('pt-BR') : 'Data pendente'}</small></div></article>)}</section><button className="button button-secondary" onClick={() => go('/')}>Voltar para a Home</button></main>;
+  return <main className="container single-page writer-public-page"><section className="writer-public-hero"><Avatar name={writer.displayName} photoURL={writer.photoURL} /><div><p className="eyebrow">Perfil público</p><h2>{writer.displayName}</h2><p>{writer.bio || 'Escritor colaborador da revista Histórias Contadas de Outra Maneira.'}</p></div></section><section className="writer-public-articles"><div className="section-head"><div><p className="eyebrow">Publicações</p><h3>Artigos aprovados</h3></div></div>{!writer.articles.length && <p className="empty-state">Este escritor ainda não possui artigos publicados.</p>}{writer.articles.map((article) => <article className="writer-public-card" key={article.id}>{article.cover_image && <img src={article.cover_image} alt="" /> }<div><span className="tag">{article.category}</span><h4>{article.title}</h4><p>{article.excerpt}</p><small>{article.created_at ? new Date(article.created_at).toLocaleDateString('pt-BR') : 'Data pendente'}</small></div></article>)}</section><button className="button button-secondary" onClick={() => go('/')}>Voltar para a Home</button></main>;
 }
 
 function App() {

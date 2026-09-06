@@ -131,6 +131,7 @@ async function getPublicWriter(uid) {
   return {
     uid,
     displayName: profile.displayName || 'Escritor',
+    photoURL: profile.photoURL || '',
     bio: profile.bio || '',
     articles: articleSnapshot.docs.filter((document) => document.data().status === 'aprovado').map((document) => {
       const data = document.data();

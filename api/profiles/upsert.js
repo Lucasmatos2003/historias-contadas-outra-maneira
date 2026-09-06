@@ -29,13 +29,30 @@ export default async function handler(request, response) {
     if (displayName.length < 2 || displayName.length > 80) {
       return response.status(400).json({ error: 'O nome público deve ter entre 2 e 80 caracteres.' });
     }
-    await getFirestore(getAdminApp()).collection('profiles').doc(user.uid).set({
+    const photoURL = typeof request.body?.photoURL === 'string'
+      ? request.body.photoURL.trim()
+      : '';
+    if (photoURL && !/^https:\/\/[^\s]{1,1900}$/i.test(photoURL)) {
+      return response.status(400).json({ error: 'Informe uma URL HTTPS válida para a foto.' });
+    }
+    const database = getFirestore(getAdminApp());
+    await database.collection('profiles').doc(user.uid).set({
       uid: user.uid,
       displayName: displayName || user.name || user.email?.split('@')[0] || 'Escritor',
+      photoURL,
       email: user.email || '',
       role: 'writer',
       updated_at: FieldValue.serverTimestamp()
     }, { merge: true });
+    const articles = await database.collection('articles').where('author_uid', '==', user.uid).get();
+    if (!articles.empty) {
+      const batch = database.batch();
+      articles.docs.forEach((article) => batch.update(article.ref, {
+        author_name: displayName,
+        updated_at: FieldValue.serverTimestamp()
+      }));
+      await batch.commit();
+    }
     return response.status(204).end();
   } catch (error) {
     const result = publicError(error, 'Não foi possível salvar o perfil.');
