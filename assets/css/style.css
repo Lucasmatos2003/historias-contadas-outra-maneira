@@ -39,8 +39,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: clamp(14px, 2vw, 28px);
-  padding: 14px clamp(16px, 2.5vw, 28px);
+  gap: clamp(10px, 1.4vw, 22px);
+  padding: 12px clamp(14px, 2vw, 24px);
   border: 1px solid var(--line);
   background: rgba(14, 24, 36, 0.88);
   backdrop-filter: blur(14px);
@@ -55,7 +55,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex-shrink: 0;
   min-width: 0;
 }
@@ -63,20 +63,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .brand-link {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   text-decoration: none;
   flex-shrink: 0;
   min-width: 0;
 }
 
 .brand-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
   font-family: Georgia, serif;
-  font-size: 1.85rem;
+  font-size: 1.7rem;
   background: linear-gradient(135deg, var(--gold), #ab8745);
   color: var(--bg);
   font-weight: 700;
@@ -94,14 +94,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   margin: 0 0 2px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: var(--gold-soft);
 }
 
 .brand-text-block h1 {
   font-family: Georgia, "Times New Roman", serif;
   margin: 0;
-  font-size: clamp(1.05rem, 1.25vw, 1.4rem);
+  font-size: clamp(0.96rem, 1.12vw, 1.25rem);
   line-height: 1.15;
   font-weight: 700;
   white-space: nowrap;
@@ -127,8 +127,8 @@ h1, h2, h3, h4 {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: clamp(8px, 1.1vw, 16px);
-  font-size: clamp(0.82rem, 0.9vw, 0.9rem);
+  gap: clamp(6px, 0.85vw, 12px);
+  font-size: clamp(0.78rem, 0.84vw, 0.86rem);
   min-width: 0;
 }
 
@@ -1369,7 +1369,9 @@ h1, h2, h3, h4 {
 .header-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
 .icon-button,
@@ -2086,7 +2088,7 @@ body.light-theme .cover-title-display {
   }
 }
 
-@media (max-width: 1220px) {
+@media (max-width: 1320px) {
   .menu-toggle { display: grid; }
   .site-header {
     flex-wrap: wrap;

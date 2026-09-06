@@ -134,8 +134,8 @@ function Layout({ children, articles, user, profile, isAdmin, onLogout }) {
           <a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades Geradas</a>
           <a href="/sobre" onClick={link('/sobre')}>Sobre</a>
           <a href="/contato" onClick={link('/contato')}>Contato</a>
-          {user && <a className="nav-badge-submit" href="/submeter" onClick={link('/submeter')}>Submeter artigo</a>}
-          {isAdmin && <a className="nav-badge-admin" href="/admin" onClick={link('/admin')}>⚙ Painel admin</a>}
+          {user && <a className="nav-badge-submit" href="/submeter" onClick={link('/submeter')}>+ Artigo</a>}
+          {isAdmin && <a className="nav-badge-admin" href="/admin" onClick={link('/admin')}>⚙ Admin</a>}
         </nav>
         <div className="header-controls">
           <button className="icon-button" aria-label="Abrir busca" onClick={() => setSearchOpen(true)}>⌕</button>
