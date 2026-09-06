@@ -92,3 +92,29 @@ O valor de R$ 5,00 está fixado no endpoint de submissão para evitar que o clie
 As APIs autenticadas aplicam limites de requisições, validam o tamanho e o formato dos campos no servidor e não devolvem detalhes internos de Firebase ou Firestore. O painel administrativo exige o `ADMIN_UID`; usuários escritores não conseguem listar ou alterar artigos pela API administrativa. O rate limiting atual usa a memória da função serverless; para escalar horizontalmente, substitua o armazenamento por Vercel KV ou Redis compartilhado.
 
 Enquanto `MERCADOPAGO_ACCESS_TOKEN` não estiver configurado, o modo temporário salva os artigos diretamente como `pendente_revisao`, sem cobrança. A conta cujo UID corresponde a `ADMIN_UID` também é isenta da taxa e entra diretamente em revisão. Se a criação da cobrança falhar, o artigo é marcado como `pagamento_erro`, evitando registros presos em `pendente_pagamento`. Webhooks sem assinatura válida são rejeitados.
+## Deploy na Hostinger
+
+Este projeto usa um servidor Node próprio para servir o `dist/` e encaminhar as rotas `/api/...` para os handlers do Firebase e Mercado Pago.
+
+Configure a aplicação Node com:
+
+- Diretório raiz: `./`
+- Arquivo de inicialização: `server.js`
+- Comando de build: `npm run build`
+- Comando de inicialização: `npm start`
+- Versão do Node: 22.x
+- Porta: use a variável `PORT` fornecida pela Hostinger
+
+Após a implantação, verifique `https://seu-dominio/api/health`. A resposta esperada é `{"ok":true}`.
+
+As variáveis server-side devem ser cadastradas no painel da Hostinger, sem aspas:
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `MERCADOPAGO_ACCESS_TOKEN`
+- `MERCADOPAGO_WEBHOOK_SECRET`
+- `ADMIN_UID`
+- `PUBLIC_APP_URL=https://historiasdeoutramaneira.com.br`
+
+As variáveis `VITE_FIREBASE_*` continuam sendo usadas no build do frontend.
