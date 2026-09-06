@@ -217,7 +217,7 @@ function Article({ slug, articles }) {
 }
 
 function Admin({ articles, onChange }) {
-  const empty = { title: '', excerpt: '', category: 'História Alternativa', readingTime: '5 min', author: 'Helena Voss', content: '' };
+  const empty = { title: '', excerpt: '', category: 'História Alternativa', readingTime: '5 min', author: 'Lucas Matos', content: '' };
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
   const slugify = (value) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -563,7 +563,7 @@ function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, regist
 }
 
 function StaticPage({ type }) {
-  if (type === 'sobre') return <main className="container single-page"><section className="about-hero"><div className="author-photo"><span>HV</span></div><div className="author-copy"><p className="eyebrow">Sobre o autor</p><h2>Helena Voss</h2><p>Escritora, pesquisadora e analista de história, Helena investiga os pontos de inflexão que mudaram o rumo do mundo.</p></div></section><section className="about-story"><p>Seu trabalho combina investigação documental, leitura crítica e curiosidade por tudo aquilo que ficou fora da versão oficial.</p></section></main>;
+  if (type === 'sobre') return <main className="container single-page"><section className="about-hero"><div className="author-photo"><span>HC</span></div><div className="author-copy"><p className="eyebrow">Sobre o criador</p><h2>Lucas David Carvalho Vieira de Matos</h2><p>Recém-formado em Ciência da Computação e apaixonado por história desde a escola, Lucas une tecnologia e narrativa para explorar os caminhos que a história não tomou.</p></div></section><section className="about-story"><p>A ideia de criar este blog nasceu de uma vontade simples: juntar duas paixões que sempre caminharam lado a lado. Durante a escola, história sempre foi a matéria que mais despertava curiosidade — não pelo que aconteceu, mas pelo que <em>poderia</em> ter acontecido.</p><p>Depois de se formar em Ciência da Computação, Lucas criou o <strong>Histórias Contadas de Outra Maneira</strong> para ser um espaço aberto: um lugar onde ele mesmo pudesse escrever, mas também onde outras pessoas pudessem trazer suas próprias versões e hipóteses sobre o passado.</p><p>Espero que gostem e se divirtam tanto quanto eu me divirto pensando nesses outros caminhos que a história poderia ter tomado!</p></section></main>;
   return <main className="container single-page"><section className="contact-card"><p className="eyebrow">Contato</p><h2>Parcerias, sugestões e mensagens dos leitores</h2><form className="contact-form" onSubmit={(event) => { event.preventDefault(); alert('Mensagem enviada.'); }}><label>Nome<input required name="nome" placeholder="Seu nome" /></label><label>E-mail<input required type="email" name="email" placeholder="Seu e-mail" /></label><label>Mensagem<textarea required name="mensagem" rows="5" placeholder="Escreva sua mensagem" /></label><button className="button button-primary" type="submit">Enviar mensagem</button></form></section></main>;
 }
 
