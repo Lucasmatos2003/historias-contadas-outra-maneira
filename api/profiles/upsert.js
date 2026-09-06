@@ -32,8 +32,8 @@ export default async function handler(request, response) {
     const photoURL = typeof request.body?.photoURL === 'string'
       ? request.body.photoURL.trim()
       : '';
-    if (photoURL && !/^https:\/\/[^\s]{1,1900}$/i.test(photoURL)) {
-      return response.status(400).json({ error: 'Informe uma URL HTTPS válida para a foto.' });
+    if (photoURL && !(/^https:\/\/[^\s]{1,1900}$/i.test(photoURL) || /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]{1,700000}$/.test(photoURL))) {
+      return response.status(400).json({ error: 'Envie uma imagem JPG, PNG ou WebP válida.' });
     }
     const database = getFirestore(getAdminApp());
     await database.collection('profiles').doc(user.uid).set({
