@@ -225,11 +225,62 @@ function Category({ slug, articles }) {
   return <main className="container category-page"><section className="page-intro"><p className="eyebrow">Categoria</p><h2>{info?.name || 'Categoria'}</h2><p>{info?.description || 'Explore as histórias publicadas.'} Neste espaço, indícios, hipóteses e cenários possíveis redefinem o rastro das civilizações.</p><div className="category-tools"><label className="search-field"><span>Pesquisar nesta categoria</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Digite um título ou tema" /></label><select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Ordenar artigos"><option value="recent">Mais recentes</option><option value="reading">Leitura mais curta</option><option value="title">Ordem alfabética</option></select></div></section><section className="article-grid category-grid">{visible.map((article, index) => <ArticleCard key={article.slug} article={article} index={index} />)}</section>{filtered.length > pageSize && <nav className="pagination" aria-label="Paginação">{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} className={page === index + 1 ? 'active' : ''} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</nav>}</main>;
 }
 
+function formatSupabaseArticle(row) {
+  const categoryNames = {
+    'historia-alternativa': 'História Alternativa',
+    'curiosidades-geradas': 'Curiosidades Geradas'
+  };
+  const category = categoryNames[row.category] || row.category || 'História Alternativa';
+  const categorySlug = row.category === 'curiosidades-geradas' ? 'curiosidades-geradas' : 'historia-alternativa';
+  const words = (row.content || '').split(/\s+/).length;
+  const readingTime = `${Math.max(1, Math.round(words / 160))} min`;
+  const date = row.created_at
+    ? new Date(row.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
+    : 'Recentemente';
+  const slugBase = (row.title || 'artigo')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  const slug = `${slugBase}-${(row.id || '').slice(0, 8)}`;
+
+  let content = [];
+  if (Array.isArray(row.content)) {
+    content = row.content;
+  } else if (typeof row.content === 'string') {
+    try {
+      const parsed = JSON.parse(row.content);
+      content = Array.isArray(parsed) ? parsed : row.content.split('\n').filter(Boolean);
+    } catch {
+      content = row.content.split('\n').filter(Boolean);
+    }
+  }
+
+  return {
+    id: row.id,
+    slug,
+    slugBase,
+    title: row.title,
+    excerpt: row.excerpt,
+    category,
+    categorySlug,
+    author: row.author_name || 'Escritor',
+    author_uid: row.author_uid,
+    readingTime,
+    date,
+    image: row.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1400&q=85',
+    content,
+    featured: false
+  };
+}
+
 function Article({ slug, articles }) {
-  const article = articles.find((item) => item.slug === slug);
+  const article = articles.find((item) => item.slug === slug || item.id === slug || item.slugBase === slug);
   if (!article) return <NotFound />;
   useEffect(() => { document.title = `${article.title} | Histórias Contadas de Outra Maneira`; }, [article]);
-  return <main className="container article-layout"><article className="article-content-panel"><div className="article-header"><p className="eyebrow">{article.category}</p><h2>{article.title}</h2><div className="meta-row"><span>Por {article.author}</span><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div><div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} /><div className="article-body">{article.content.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div></article><Sidebar /></main>;
+  const paragraphs = (Array.isArray(article.content) ? article.content : String(article.content).split('\n')).filter(Boolean);
+  return <main className="container article-layout"><article className="article-content-panel"><div className="article-header"><p className="eyebrow">{article.category}</p><h2>{article.title}</h2><div className="meta-row"><span>Por {article.author}</span><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div><div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} /><div className="article-body">{paragraphs.map((paragraph, idx) => <p key={idx}>{paragraph}</p>)}</div></article><Sidebar /></main>;
 }
 
 function Admin({ articles, onChange }) {
@@ -249,7 +300,7 @@ function Admin({ articles, onChange }) {
   return <main className="container admin-layout"><section className="contact-card"><p className="eyebrow">CMS local</p><h2>{editing ? 'Editar artigo' : 'Novo artigo'}</h2><form className="contact-form" onSubmit={submit}><label>Título<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label><label>Resumo<textarea required rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label><label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>História Alternativa</option><option>Curiosidades Geradas</option></select></label><label>Conteúdo <span className="field-hint">Um parágrafo por linha</span><textarea required rows="7" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label><button className="button button-primary" type="submit">{editing ? 'Salvar alterações' : 'Publicar artigo'}</button></form></section><section className="admin-list"><p className="eyebrow">Publicados localmente</p>{articles.map((article) => <div className="admin-item" key={article.slug}><strong>{article.title}</strong><div><button className="save-button" onClick={() => edit(article)}>Editar</button><button className="save-button danger" onClick={() => remove(article.slug)}>Excluir</button></div></div>)}</section></main>;
 }
 
-function ReviewAdmin({ user }) {
+function ReviewAdmin({ user, onArticleApproved }) {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('pendente_revisao');
   const [loading, setLoading] = useState(true);
@@ -298,6 +349,9 @@ function ReviewAdmin({ user }) {
       setReviewing(null);
       setReviewNote('');
       setError('');
+      if (status === 'aprovado') {
+        onArticleApproved?.();
+      }
     } catch (updateError) {
       setError(updateError.message);
     }
@@ -626,13 +680,54 @@ function App() {
   const { user, profile, loading, refreshUser, updateProfileState } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [, refresh] = useState(0);
-  const [localArticles, setLocalArticles] = useState([]);
+  const [allArticles, setAllArticles] = useState(articles);
+
+  const loadArticles = async () => {
+    try {
+      let publicRows = null;
+      const response = await fetch('/api/articles/public').catch(() => null);
+      if (response && response.ok) {
+        const result = await response.json();
+        if (Array.isArray(result.articles)) {
+          publicRows = result.articles;
+        }
+      }
+      if (!publicRows && supabase) {
+        const { data } = await supabase
+          .from('articles')
+          .select('id, title, excerpt, content, category, author_name, author_uid, cover_image, status, created_at')
+          .eq('status', 'aprovado')
+          .order('created_at', { ascending: false });
+        if (Array.isArray(data)) {
+          publicRows = data;
+        }
+      }
+      if (Array.isArray(publicRows)) {
+        const formatted = publicRows.map(formatSupabaseArticle);
+        const combined = [...formatted, ...articles.filter((a) => !formatted.some((f) => f.slug === a.slug || f.slugBase === a.slug))];
+        setAllArticles(combined);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar artigos:', err);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem('cms-articles', JSON.stringify(localArticles));
+    loadArticles();
+  }, []);
+
+  const path = getPath();
+
+  useEffect(() => {
+    loadArticles();
+  }, [path]);
+
+  useEffect(() => {
     const update = () => refresh((value) => value + 1);
     window.addEventListener('popstate', update);
     return () => window.removeEventListener('popstate', update);
-  }, [localArticles]);
+  }, []);
+
   useEffect(() => {
     let active = true;
     if (!user) {
@@ -646,23 +741,23 @@ function App() {
       .catch(() => { if (active) setIsAdmin(false); });
     return () => { active = false; };
   }, [user]);
-  const path = getPath();
+
   const registrationSuccess = new URLSearchParams(window.location.search).get('cadastro') === 'sucesso';
   const isEmailVerified = Boolean(user?.emailVerified || profile?.role === 'admin' || isAdmin);
-  if (loading) return <Layout articles={localArticles} profile={profile} isAdmin={false}><main className="container single-page"><section className="contact-card"><LoadingState label="Carregando sua conta..." /></section></main></Layout>;
-  let content = <Home articles={localArticles} />;
-  if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={localArticles} />;
-  else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
+  if (loading) return <Layout articles={allArticles} profile={profile} isAdmin={false}><main className="container single-page"><section className="contact-card"><LoadingState label="Carregando sua conta..." /></section></main></Layout>;
+  let content = <Home articles={allArticles} />;
+  if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={allArticles} />;
+  else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={allArticles} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
   else if (path === '/login') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage />;
   else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage mode="register" />;
   else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage registrationSuccess={registrationSuccess} />;
   else if (path === '/submeter') content = user ? (isEmailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => supabase.auth.signOut()} />) : <AuthPage />;
-  else if (path === '/admin') content = user ? <ReviewAdmin user={user} /> : <AuthPage />;
+  else if (path === '/admin') content = user ? <ReviewAdmin user={user} onArticleApproved={loadArticles} /> : <AuthPage />;
   else if (path.startsWith('/escritor/')) content = <PublicWriter uid={path.split('/')[2]} />;
   else if (!['/', '/login', '/cadastro', '/perfil', '/submeter', '/admin'].includes(path)) content = <NotFound />;
-  return <Layout articles={localArticles} user={user} profile={profile} isAdmin={isAdmin} onLogout={() => supabase.auth.signOut()}>{content}</Layout>;
+  return <Layout articles={allArticles} user={user} profile={profile} isAdmin={isAdmin} onLogout={() => supabase.auth.signOut()}>{content}</Layout>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

@@ -12,6 +12,7 @@ const apiHandlers = {
   '/api/admin/access': './api/admin/access.js',
   '/api/admin/articles': './api/admin/articles.js',
   '/api/articles/mine': './api/articles/mine.js',
+  '/api/articles/public': './api/articles/public.js',
   '/api/articles/status': './api/articles/status.js',
   '/api/articles/submit': './api/articles/submit.js',
   '/api/payments/webhook': './api/payments/webhook.js',
