@@ -180,10 +180,26 @@ function FavoriteButton({ slug }) {
 
 function ArticleCard({ article, index = 0 }) {
   const go = useNavigation();
-  return <article className={`story-card ${index === 0 ? 'large-card' : ''}`}>
-    <div><span className="tag">{article.category}</span><h4><a href={`/artigo/${article.slug}`} onClick={(event) => { event.preventDefault(); go(`/artigo/${article.slug}`); }}>{article.title}</a></h4><p>{article.excerpt}</p></div>
-    <div className="card-footer"><div className="meta-row small"><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div>
-  </article>;
+  const cover = article.image || article.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80';
+  return (
+    <article className="story-card">
+      <div className="story-card-thumb" onClick={() => go(`/artigo/${article.slug}`)}>
+        <img src={cover} alt={article.title} loading="lazy" />
+        <span className="tag">{article.category}</span>
+      </div>
+      <div className="story-card-body">
+        <h4><a href={`/artigo/${article.slug}`} onClick={(event) => { event.preventDefault(); go(`/artigo/${article.slug}`); }}>{article.title}</a></h4>
+        <p>{article.excerpt}</p>
+      </div>
+      <div className="card-footer">
+        <div className="meta-row small">
+          <span>{article.author ? `${article.author} · ` : ''}{article.readingTime}</span>
+          <span>{article.date}</span>
+        </div>
+        <FavoriteButton slug={article.slug} />
+      </div>
+    </article>
+  );
 }
 
 function Home({ articles }) {
@@ -212,7 +228,7 @@ function Category({ slug, articles }) {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('recent');
   const [page, setPage] = useState(1);
-  const pageSize = 4;
+  const pageSize = 9;
   const filtered = useMemo(() => {
     const value = articles.filter((article) => article.categorySlug === slug && `${article.title} ${article.excerpt}`.toLowerCase().includes(query.toLowerCase()));
     if (sort === 'title') return [...value].sort((a, b) => a.title.localeCompare(b.title));
@@ -222,7 +238,59 @@ function Category({ slug, articles }) {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
   useEffect(() => setPage(1), [query, sort, slug]);
-  return <main className="container category-page"><section className="page-intro"><p className="eyebrow">Categoria</p><h2>{info?.name || 'Categoria'}</h2><p>{info?.description || 'Explore as histórias publicadas.'} Neste espaço, indícios, hipóteses e cenários possíveis redefinem o rastro das civilizações.</p><div className="category-tools"><label className="search-field"><span>Pesquisar nesta categoria</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Digite um título ou tema" /></label><select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Ordenar artigos"><option value="recent">Mais recentes</option><option value="reading">Leitura mais curta</option><option value="title">Ordem alfabética</option></select></div></section><section className="article-grid category-grid">{visible.map((article, index) => <ArticleCard key={article.slug} article={article} index={index} />)}</section>{filtered.length > pageSize && <nav className="pagination" aria-label="Paginação">{Array.from({ length: totalPages }, (_, index) => <button key={index + 1} className={page === index + 1 ? 'active' : ''} onClick={() => setPage(index + 1)}>{index + 1}</button>)}</nav>}</main>;
+
+  return (
+    <main className="container category-page">
+      <section className="category-hero">
+        <div className="category-hero-header">
+          <p className="eyebrow"><span className="eyebrow-accent">/</span> Categoria Editorial</p>
+          <h2>{info?.name || 'Categoria'}</h2>
+          <p>{info?.description || 'Explore as histórias publicadas.'} Neste espaço, indícios, hipóteses e cenários possíveis redefinem o rastro das civilizações.</p>
+        </div>
+        <div className="category-controls-bar">
+          <div className="category-search-box">
+            <span className="category-search-icon" aria-hidden="true">⌕</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pesquisar nesta categoria..." aria-label="Pesquisar nesta categoria" />
+            {query && <button className="clear-search-btn" onClick={() => setQuery('')} aria-label="Limpar busca">×</button>}
+          </div>
+          <div className="category-sort-box">
+            <label htmlFor="category-sort-select">Ordenar por:</label>
+            <select id="category-sort-select" value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Ordenar artigos">
+              <option value="recent">Mais recentes</option>
+              <option value="reading">Leitura mais curta</option>
+              <option value="title">Ordem alfabética (A-Z)</option>
+            </select>
+          </div>
+          <div className="category-count-badge">
+            <span>{filtered.length} {filtered.length === 1 ? 'história' : 'histórias'}</span>
+          </div>
+        </div>
+      </section>
+
+      {visible.length > 0 ? (
+        <section className="category-grid">
+          {visible.map((article, index) => <ArticleCard key={article.slug || article.id} article={article} index={index} />)}
+        </section>
+      ) : (
+        <div className="empty-category-state">
+          <div className="empty-category-icon">⌕</div>
+          <h3>Nenhum artigo encontrado</h3>
+          <p>{query ? `Nenhum texto corresponde à busca "${query}" nesta categoria.` : 'Ainda não há artigos cadastrados nesta categoria.'}</p>
+          {query && <button className="button button-secondary" onClick={() => setQuery('')}>Limpar pesquisa</button>}
+        </div>
+      )}
+
+      {filtered.length > pageSize && (
+        <nav className="pagination" aria-label="Paginação">
+          {Array.from({ length: totalPages }, (_, index) => (
+            <button key={index + 1} className={page === index + 1 ? 'active' : ''} onClick={() => setPage(index + 1)}>
+              {index + 1}
+            </button>
+          ))}
+        </nav>
+      )}
+    </main>
+  );
 }
 
 function formatSupabaseArticle(row) {
