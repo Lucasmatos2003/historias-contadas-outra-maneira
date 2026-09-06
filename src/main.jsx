@@ -52,7 +52,7 @@ function useNavigation() {
   };
 }
 
-function Layout({ children, articles, user, onLogout }) {
+function Layout({ children, articles, user, isAdmin, onLogout }) {
   const go = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -89,6 +89,7 @@ function Layout({ children, articles, user, onLogout }) {
           <a href="/sobre" onClick={link('/sobre')}>Sobre</a>
           <a href="/contato" onClick={link('/contato')}>Contato</a>
           {user && <a href="/submeter" onClick={link('/submeter')}>Submeter artigo</a>}
+          {isAdmin && <a href="/admin" onClick={link('/admin')}>Painel admin</a>}
         </nav>
         <div className="header-controls">
           <button className="icon-button" aria-label="Abrir busca" onClick={() => setSearchOpen(true)}>⌕</button>
@@ -438,12 +439,14 @@ function WriterArticleReview({ article }) {
   </article>;
 }
 
-function Profile({ user, profile, onLogout, onVerified, registrationSuccess = false }) {
+function Profile({ user, profile, onLogout, onVerified, onProfileUpdated, registrationSuccess = false }) {
   const go = useNavigation();
   const [message, setMessage] = useState('');
   const [myArticles, setMyArticles] = useState([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
   const [articlesError, setArticlesError] = useState('');
+  const [displayName, setDisplayName] = useState(profile?.displayName || user.displayName || '');
+  const [savingProfile, setSavingProfile] = useState(false);
   useEffect(() => {
     let active = true;
     const loadArticles = async () => {
@@ -462,6 +465,33 @@ function Profile({ user, profile, onLogout, onVerified, registrationSuccess = fa
     loadArticles();
     return () => { active = false; };
   }, [user]);
+  useEffect(() => setDisplayName(profile?.displayName || user.displayName || ''), [profile?.displayName, user.displayName]);
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    const name = displayName.trim();
+    if (name.length < 2 || name.length > 80) {
+      setMessage('O nome público deve ter entre 2 e 80 caracteres.');
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      await updateProfile(user, { displayName: name });
+      const token = await user.getIdToken();
+      const response = await fetch('/api/profiles/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ displayName: name })
+      });
+      const result = response.status === 204 ? null : await response.json();
+      if (!response.ok) throw new Error(result?.error || 'Não foi possível atualizar o nome.');
+      onProfileUpdated?.(name);
+      setMessage('Nome público atualizado com sucesso.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
   const resend = async () => {
     await sendEmailVerification(user);
     setMessage('E-mail de verificação reenviado. Confira sua caixa de entrada e a pasta de spam.');
@@ -470,7 +500,7 @@ function Profile({ user, profile, onLogout, onVerified, registrationSuccess = fa
     await onVerified();
     setMessage(auth.currentUser?.emailVerified ? 'E-mail confirmado com sucesso.' : 'Ainda não confirmamos o e-mail. Clique no link recebido e tente novamente.');
   };
-  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
+  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><div className="profile-avatar">{(user.displayName || user.email || 'P').slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${user.emailVerified ? '' : 'tag-warning'}`}>{user.emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span></div></section><form className="profile-name-form" onSubmit={saveProfile}><label>Nome público<input required minLength="2" maxLength="80" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como você quer aparecer nos artigos?" /></label><button className="button button-secondary" disabled={savingProfile}>{savingProfile ? 'Salvando...' : 'Salvar nome público'}</button></form>{!user.emailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!user.emailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
 }
 
 function StaticPage({ type }) {
@@ -505,6 +535,7 @@ function PublicWriter({ uid }) {
 
 function App() {
   const { user, profile, loading, refreshUser } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [, refresh] = useState(0);
   const [localArticles, setLocalArticles] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cms-articles')) || articles; } catch { return articles; }
@@ -515,22 +546,35 @@ function App() {
     window.addEventListener('popstate', update);
     return () => window.removeEventListener('popstate', update);
   }, [localArticles]);
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setIsAdmin(false);
+      return undefined;
+    }
+    user.getIdToken()
+      .then((token) => fetch('/api/admin/access', { headers: { Authorization: `Bearer ${token}` } }))
+      .then((response) => response.ok ? response.json() : { isAdmin: false })
+      .then((result) => { if (active) setIsAdmin(Boolean(result.isAdmin)); })
+      .catch(() => { if (active) setIsAdmin(false); });
+    return () => { active = false; };
+  }, [user]);
   const path = getPath();
   const registrationSuccess = new URLSearchParams(window.location.search).get('cadastro') === 'sucesso';
-  if (loading) return <Layout articles={localArticles}><main className="container single-page"><section className="contact-card"><LoadingState label="Carregando sua conta..." /></section></main></Layout>;
+  if (loading) return <Layout articles={localArticles} isAdmin={false}><main className="container single-page"><section className="contact-card"><LoadingState label="Carregando sua conta..." /></section></main></Layout>;
   let content = <Home articles={localArticles} />;
   if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={localArticles} />;
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={localArticles} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
-  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage />;
-  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage mode="register" />;
-  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onLogout={() => signOut(auth)} /> : <AuthPage />;
-  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} onVerified={refreshUser} onLogout={() => signOut(auth)} />) : <AuthPage />;
+  else if (path === '/login') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => signOut(auth)} /> : <AuthPage />;
+  else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => signOut(auth)} /> : <AuthPage mode="register" />;
+  else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => signOut(auth)} /> : <AuthPage />;
+  else if (path === '/submeter') content = user ? (user.emailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => signOut(auth)} />) : <AuthPage />;
   else if (path === '/admin') content = user ? <ReviewAdmin user={user} /> : <AuthPage />;
   else if (path.startsWith('/escritor/')) content = <PublicWriter uid={path.split('/')[2]} />;
   else if (!['/', '/login', '/cadastro', '/perfil', '/submeter', '/admin'].includes(path)) content = <NotFound />;
-  return <Layout articles={localArticles} user={user} onLogout={() => signOut(auth)}>{content}</Layout>;
+  return <Layout articles={localArticles} user={user} isAdmin={isAdmin} onLogout={() => signOut(auth)}>{content}</Layout>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);

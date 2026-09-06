@@ -26,6 +26,9 @@ export default async function handler(request, response) {
     const displayName = typeof request.body?.displayName === 'string'
       ? request.body.displayName.trim().slice(0, 80)
       : '';
+    if (displayName.length < 2 || displayName.length > 80) {
+      return response.status(400).json({ error: 'O nome público deve ter entre 2 e 80 caracteres.' });
+    }
     await getFirestore(getAdminApp()).collection('profiles').doc(user.uid).set({
       uid: user.uid,
       displayName: displayName || user.name || user.email?.split('@')[0] || 'Escritor',

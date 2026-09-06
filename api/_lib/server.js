@@ -159,6 +159,7 @@ async function getAllArticles() {
       author_email: data.author_email,
       author_name: data.author_name || 'Escritor',
       author_uid: data.author_uid,
+      cover_image: data.cover_image || '',
       status: data.status,
       created_at: data.created_at?.toDate?.().toISOString() || null,
       review_note: data.review_note || ''
