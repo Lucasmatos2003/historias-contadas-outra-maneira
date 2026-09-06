@@ -152,6 +152,9 @@ function ArticleCard({ article, index = 0 }) {
 }
 
 function Home({ articles }) {
+  if (!articles.length) {
+    return <main className="container home-layout"><div className="content-column"><section className="empty-home"><p className="eyebrow">Revista em preparação</p><h2>Em breve, novas histórias.</h2><p>Estamos preparando os primeiros artigos da revista. Volte em breve para descobrir histórias, hipóteses e curiosidades contadas de outra maneira.</p><a className="button button-primary" href="/sobre">Conheça a revista</a></section><section className="quick-curiosities"><div className="section-head"><div><p className="eyebrow">Enquanto isso</p><h3>Estamos construindo algo especial</h3></div></div><div className="facts-list"><div className="fact-item"><span className="fact-number">01</span><p>Novos textos serão publicados assim que passarem pela revisão editorial.</p></div><div className="fact-item"><span className="fact-number">02</span><p>Acompanhe o projeto e compartilhe a revista com quem gosta de história.</p></div></div></section></div><Sidebar /></main>;
+  }
   const featured = articles.find((article) => article.featured) || articles[0];
   return <main className="container home-layout"><div className="content-column">
     <section className="hero-article">
@@ -566,9 +569,7 @@ function App() {
   const { user, profile, loading, refreshUser, updateProfileState } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [, refresh] = useState(0);
-  const [localArticles, setLocalArticles] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('cms-articles')) || articles; } catch { return articles; }
-  });
+  const [localArticles, setLocalArticles] = useState([]);
   useEffect(() => {
     localStorage.setItem('cms-articles', JSON.stringify(localArticles));
     const update = () => refresh((value) => value + 1);

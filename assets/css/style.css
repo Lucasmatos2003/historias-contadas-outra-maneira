@@ -1022,6 +1022,24 @@ h1 {
   margin: 48px auto;
   text-align: center;
 }
+.empty-home {
+  padding: clamp(42px, 8vw, 90px) clamp(24px, 6vw, 72px);
+  text-align: center;
+  background: rgba(18, 32, 48, 0.9);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 40px var(--shadow);
+}
+.empty-home h2 {
+  max-width: 680px;
+  margin: 0 auto 16px;
+  font-size: clamp(2.2rem, 5vw, 4.2rem);
+}
+.empty-home p:not(.eyebrow) {
+  max-width: 620px;
+  margin: 0 auto 26px;
+  color: var(--muted);
+  line-height: 1.8;
+}
 .writer-public-page {
   display: block;
 }
