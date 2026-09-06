@@ -30,18 +30,19 @@ export default async function handler(request, response) {
 
     let payment;
     try {
-      payment = await mercadoPagoRequest('/v1/payments', {
-        method: 'POST',
-        headers: { 'X-Idempotency-Key': `article-${saved.id}` },
-        body: JSON.stringify({
-          transaction_amount: 5,
-          description: `Taxa de submissão: ${article.title}`,
-          payment_method_id: 'pix',
-          payer: { email: article.authorEmail },
-          external_reference: String(saved.id),
-          notification_url: `${process.env.PUBLIC_APP_URL || `https://${request.headers.host}`}/api/payments/webhook`
-        })
-      });
+        const appUrl = (process.env.PUBLIC_APP_URL || `https://${request.headers.host}`).replace(/\/+$/, '');
+        payment = await mercadoPagoRequest('/v1/payments', {
+          method: 'POST',
+          headers: { 'X-Idempotency-Key': `article-${saved.id}` },
+          body: JSON.stringify({
+            transaction_amount: 5,
+            description: `Taxa de submissão: ${article.title}`,
+            payment_method_id: 'pix',
+            payer: { email: article.authorEmail },
+            external_reference: String(saved.id),
+            notification_url: `${appUrl}/api/payments/webhook`
+          })
+        });
     } catch (paymentError) {
       await updateArticle(saved.id, { status: 'pagamento_erro', payment_status: 'error' });
       throw paymentError;

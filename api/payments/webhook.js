@@ -5,9 +5,9 @@ export default async function handler(request, response) {
 
   try {
     rateLimit(request, 'webhook', 120, 60 * 1000);
-    const payload = request.body;
-    const paymentId = payload?.data?.id || payload?.id;
-    if (!paymentId) throw new RequestError('Notificação inválida.', 400);
+    const payload = request.body || {};
+    const paymentId = payload?.data?.id || payload?.id || request.query?.id || request.query?.['data.id'];
+    if (!paymentId) return response.json({ received: true });
     verifyMercadoPagoSignature(request, String(paymentId));
 
     const payment = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}`);
