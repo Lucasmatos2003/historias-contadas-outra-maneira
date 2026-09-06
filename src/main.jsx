@@ -123,7 +123,10 @@ function Layout({ children, articles, user, profile, isAdmin, onLogout }) {
       <header className="site-header">
         <a className="brand-row brand-link" href="/" onClick={link('/')}>
           <span className="brand-mark">H</span>
-          <span><span className="eyebrow">Revista digital</span><h1>Histórias Contadas de Outra Maneira</h1></span>
+          <span className="brand-text-block">
+            <span className="eyebrow">Revista digital</span>
+            <h1>Histórias Contadas de Outra Maneira</h1>
+          </span>
         </a>
         <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
           <a href="/" onClick={link('/')}>Home</a>
@@ -131,8 +134,8 @@ function Layout({ children, articles, user, profile, isAdmin, onLogout }) {
           <a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades Geradas</a>
           <a href="/sobre" onClick={link('/sobre')}>Sobre</a>
           <a href="/contato" onClick={link('/contato')}>Contato</a>
-          {user && <a href="/submeter" onClick={link('/submeter')}>Submeter artigo</a>}
-          {isAdmin && <a href="/admin" onClick={link('/admin')}>Painel admin</a>}
+          {user && <a className="nav-badge-submit" href="/submeter" onClick={link('/submeter')}>Submeter artigo</a>}
+          {isAdmin && <a className="nav-badge-admin" href="/admin" onClick={link('/admin')}>⚙ Painel admin</a>}
         </nav>
         <div className="header-controls">
           <button className="icon-button" aria-label="Abrir busca" onClick={() => setSearchOpen(true)}>⌕</button>
@@ -203,23 +206,325 @@ function ArticleCard({ article, index = 0 }) {
 }
 
 function Home({ articles }) {
+  const go = useNavigation();
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterDone, setNewsletterDone] = useState(false);
+
   if (!articles.length) {
-    return <main className="container home-layout"><div className="content-column"><section className="empty-home"><p className="eyebrow">Revista em preparação</p><h2>Em breve, novas histórias.</h2><p>Estamos preparando os primeiros artigos da revista. Volte em breve para descobrir histórias, hipóteses e curiosidades contadas de outra maneira.</p><a className="button button-primary" href="/sobre">Conheça a revista</a></section><section className="quick-curiosities"><div className="section-head"><div><p className="eyebrow">Enquanto isso</p><h3>Estamos construindo algo especial</h3></div></div><div className="facts-list"><div className="fact-item"><span className="fact-number">01</span><p>Novos textos serão publicados assim que passarem pela revisão editorial.</p></div><div className="fact-item"><span className="fact-number">02</span><p>Acompanhe o projeto e compartilhe a revista com quem gosta de história.</p></div></div></section></div><Sidebar /></main>;
+    return (
+      <main className="container home-layout">
+        <div className="content-column">
+          <section className="empty-home">
+            <p className="eyebrow">Revista em preparação</p>
+            <h2>Em breve, novas histórias.</h2>
+            <p>Estamos preparando os primeiros artigos da revista. Volte em breve para descobrir histórias, hipóteses e curiosidades contadas de outra maneira.</p>
+            <a className="button button-primary" href="/sobre" onClick={(e) => { e.preventDefault(); go('/sobre'); }}>Conheça a revista</a>
+          </section>
+        </div>
+        <Sidebar />
+      </main>
+    );
   }
+
   const featured = articles.find((article) => article.featured) || articles[0];
-  return <main className="container home-layout"><div className="content-column">
-    <section className="hero-article">
-      <div className="hero-copy"><p className="eyebrow">Artigo principal</p><h2>{featured.title}</h2><p>{featured.excerpt}</p><div className="meta-row"><span>Por {featured.author}</span><span>{featured.readingTime} de leitura</span></div><a className="button button-primary" href={`/artigo/${featured.slug}`}>Ler artigo</a></div>
-      <div className="hero-visual" aria-label={`Imagem do artigo: ${featured.title}`}><div className="visual-card" style={{ backgroundImage: `linear-gradient(180deg, rgba(8,18,26,.04) 15%, rgba(7,11,17,.9) 100%), url('${featured.image}')` }}><div className="visual-kicker"><span className="visual-line" />{featured.category}</div><strong>Um império<br />em outro rumo</strong><span className="visual-caption">Roma · Cartago · História alternativa</span></div></div>
-    </section>
-    <section className="section-head"><div><p className="eyebrow">Últimos textos</p><h3>Rumos não traçados</h3></div></section>
-    <section className="article-grid">{articles.filter((article) => !article.featured).map((article, index) => <ArticleCard key={article.slug} article={article} index={index} />)}</section>
-    <section className="quick-curiosities"><div className="section-head"><div><p className="eyebrow">Curiosidades rápidas</p><h3>Fatos que desafiam a lógica</h3></div></div><div className="facts-list">{['Existiram cidades inteiras que mudaram de país sem que ninguém percebesse no momento.', 'Alguns inventos militares parecem ter sido criados antes de suas épocas por pura coincidência.', 'As rotas comerciais mais lucrativas nem sempre eram as mais visíveis nos mapas.'].map((fact, index) => <div className="fact-item" key={fact}><span className="fact-number">0{index + 1}</span><p>{fact}</p></div>)}</div></section>
-  </div><Sidebar /></main>;
+  const otherArticles = articles.filter((article) => article.slug !== featured.slug);
+  const coverUrl = featured.image || featured.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80';
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (newsletterEmail.trim()) {
+      setNewsletterDone(true);
+    }
+  };
+
+  return (
+    <main className="container home-layout">
+      <div className="content-column">
+        {/* HERO EDITORIAL REDESIGN */}
+        <section className="hero-article-modern">
+          <div className="hero-copy-modern">
+            <div className="hero-kicker-row">
+              <span className="hero-live-badge">
+                <span className="hero-live-dot" /> Destaque Editorial
+              </span>
+              <span className="hero-tag-accent">{featured.category}</span>
+            </div>
+
+            <h2 className="hero-title-modern">
+              <a href={`/artigo/${featured.slug}`} onClick={(e) => { e.preventDefault(); go(`/artigo/${featured.slug}`); }}>
+                {featured.title}
+              </a>
+            </h2>
+
+            <p className="hero-lead-text">{featured.excerpt}</p>
+
+            <div className="hero-byline-bar">
+              <div className="hero-author-pill">
+                <div className="hero-author-avatar">
+                  {featured.author?.[0] || 'R'}
+                </div>
+                <div className="hero-author-details">
+                  <span className="hero-author-name">{featured.author || 'Equipe Editorial'}</span>
+                  <span className="hero-author-time">{featured.date} · {featured.readingTime} de leitura</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="hero-action-buttons">
+              <a
+                className="button button-primary hero-main-cta"
+                href={`/artigo/${featured.slug}`}
+                onClick={(e) => { e.preventDefault(); go(`/artigo/${featured.slug}`); }}
+              >
+                <span>Ler história completa</span>
+                <span className="cta-arrow-icon" aria-hidden="true">→</span>
+              </a>
+              <FavoriteButton slug={featured.slug} />
+            </div>
+          </div>
+
+          <div className="hero-visual-modern">
+            <a
+              className="hero-magazine-cover"
+              href={`/artigo/${featured.slug}`}
+              onClick={(e) => { e.preventDefault(); go(`/artigo/${featured.slug}`); }}
+              style={{ backgroundImage: `url('${coverUrl}')` }}
+              aria-label={`Ler artigo em destaque: ${featured.title}`}
+            >
+              <div className="cover-scrim" />
+              <div className="cover-border-inlay" />
+              <div className="cover-content">
+                <div className="cover-top-badge">
+                  <span className="cover-brand-stamp">Histórias Contadas</span>
+                  <span className="cover-pill-category">{featured.category}</span>
+                </div>
+                <div className="cover-bottom-details">
+                  <span className="cover-gold-rule" />
+                  <strong className="cover-title-display">{featured.title}</strong>
+                  <div className="cover-action-prompt">
+                    <span>Acessar edição completa</span>
+                    <span className="prompt-arrow">↗</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        {/* FEED DE HISTÓRIAS */}
+        <section className="section-head">
+          <div>
+            <p className="eyebrow">Últimos ensaios & narrativas</p>
+            <h3>Rumos não traçados</h3>
+          </div>
+        </section>
+
+        <section className="article-grid">
+          {otherArticles.map((article, index) => (
+            <ArticleCard key={article.slug} article={article} index={index} />
+          ))}
+        </section>
+
+        {/* FINAL DA HOME: CURIOSIDADES REDESENHADAS */}
+        <section className="curiosities-modern-section">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Arquivo de mistérios & indícios</p>
+              <h3>Curiosidades que desafiam a lógica</h3>
+            </div>
+            <a
+              href="/categoria/curiosidades-geradas"
+              onClick={(e) => { e.preventDefault(); go('/categoria/curiosidades-geradas'); }}
+              className="explore-section-link"
+            >
+              Ver todas as curiosidades →
+            </a>
+          </div>
+
+          <div className="curiosity-cards-grid">
+            <div className="curiosity-feature-card">
+              <div className="curiosity-card-top">
+                <span className="curiosity-card-icon">🏛️</span>
+                <span className="curiosity-card-num">01</span>
+              </div>
+              <span className="curiosity-category-pill">Geopolítica Secreta</span>
+              <h4>Cidades que trocaram de país durante a noite</h4>
+              <p>
+                Em tratados territoriais negociados sob sigilo, populações inteiras acordavam súditas de novas coroas e leis — e moradores levavam meses para saber a quem pagavam tributos.
+              </p>
+            </div>
+
+            <div className="curiosity-feature-card">
+              <div className="curiosity-card-top">
+                <span className="curiosity-card-icon">⚙️</span>
+                <span className="curiosity-card-num">02</span>
+              </div>
+              <span className="curiosity-category-pill">Mecânica Ancestral</span>
+              <h4>O computador analógico de 2.100 anos atrás</h4>
+              <p>
+                A Máquina de Anticítera já calculava eclipses e trajetórias planetárias com 30 engrenagens de bronze de precisão milimétrica, tecnologia que só reapareceu na Europa no século XIV.
+              </p>
+            </div>
+
+            <div className="curiosity-feature-card">
+              <div className="curiosity-card-top">
+                <span className="curiosity-card-icon">🗺️</span>
+                <span className="curiosity-card-num">03</span>
+              </div>
+              <span className="curiosity-category-pill">Cartografia Oculta</span>
+              <h4>Mapas deliberadamente desenhados para naufragar</h4>
+              <p>
+                Durante a corrida marítima renascentista, coroas desenhavam ilhas fantasmas e recifes fictícios em cópias de cartas náuticas para fazer espiões rivais naufragarem em alto-mar.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* FINAL DA HOME: NEWSLETTER / MANIFESTO EDITORIAL */}
+        <section className="home-newsletter-banner">
+          <div className="newsletter-banner-body">
+            <span className="newsletter-eyebrow">✦ Edição quinzenal gratuita</span>
+            <h3>Gosta de questionar o rumo da história?</h3>
+            <p>
+              Receba análises contrafatuais, enigmas históricos resolvidos e reflexões que conectam o passado a futuros possíveis diretamente no seu e-mail.
+            </p>
+          </div>
+          <form className="newsletter-banner-form" onSubmit={handleSubscribe}>
+            {newsletterDone ? (
+              <div className="newsletter-success-box">
+                <span className="success-check">✓</span>
+                <div>
+                  <strong>Inscrição confirmada!</strong>
+                  <span>Bem-vindo à nossa comunidade de leitores curiosos.</span>
+                </div>
+              </div>
+            ) : (
+              <div className="newsletter-form-fields">
+                <input
+                  type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="Seu e-mail principal..."
+                  required
+                  aria-label="Seu e-mail principal"
+                />
+                <button type="submit" className="button button-primary">Inscrever-se</button>
+              </div>
+            )}
+          </form>
+        </section>
+      </div>
+
+      <Sidebar />
+    </main>
+  );
 }
 
 function Sidebar() {
-  return <aside className="sidebar-column"><div className="ad-slot ad-large"><span>Banner / anúncio</span><strong>Espaço para publicidade</strong></div><div className="sidebar-panel"><p className="eyebrow">Categorias</p><ul className="side-list"><li><a href="/categoria/historia-alternativa">História Alternativa</a></li><li><a href="/categoria/curiosidades-geradas">Curiosidades Geradas</a></li><li><a href="/sobre">Sobre o Autor</a></li><li><a href="/contato">Contato</a></li></ul></div><div className="ad-slot ad-small"><span>Google AdSense</span><strong>Área reservada para anúncios</strong></div></aside>;
+  const go = useNavigation();
+  return (
+    <aside className="sidebar-column">
+      {/* Mini Perfil Editorial do Autor */}
+      <div className="sidebar-author-widget">
+        <div className="sidebar-author-header">
+          <img
+            src="/images/lucas-matos.jpg"
+            alt="Lucas Matos"
+            className="sidebar-author-thumb"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+          <div>
+            <span className="eyebrow">Fundador & Autor</span>
+            <strong>Lucas Matos</strong>
+          </div>
+        </div>
+        <p className="sidebar-author-text">
+          Criador da revista Histórias Contadas de Outra Maneira. Explorando o que acontece quando perguntamos "e se?".
+        </p>
+        <a
+          href="/sobre"
+          onClick={(e) => { e.preventDefault(); go('/sobre'); }}
+          className="sidebar-author-btn"
+        >
+          Conheça o autor & manifesto →
+        </a>
+      </div>
+
+      {/* Navegação de Seções */}
+      <div className="sidebar-panel">
+        <p className="eyebrow">Seções Editoriais</p>
+        <ul className="sidebar-nav-list">
+          <li>
+            <a href="/categoria/historia-alternativa" onClick={(e) => { e.preventDefault(); go('/categoria/historia-alternativa'); }}>
+              <span className="sidebar-cat-left">
+                <span className="sidebar-cat-icon">🏛️</span>
+                <span>História Alternativa</span>
+              </span>
+              <span className="sidebar-cat-arrow">›</span>
+            </a>
+          </li>
+          <li>
+            <a href="/categoria/curiosidades-geradas" onClick={(e) => { e.preventDefault(); go('/categoria/curiosidades-geradas'); }}>
+              <span className="sidebar-cat-left">
+                <span className="sidebar-cat-icon">💡</span>
+                <span>Curiosidades Geradas</span>
+              </span>
+              <span className="sidebar-cat-arrow">›</span>
+            </a>
+          </li>
+          <li>
+            <a href="/sobre" onClick={(e) => { e.preventDefault(); go('/sobre'); }}>
+              <span className="sidebar-cat-left">
+                <span className="sidebar-cat-icon">📖</span>
+                <span>Sobre a Revista</span>
+              </span>
+              <span className="sidebar-cat-arrow">›</span>
+            </a>
+          </li>
+          <li>
+            <a href="/contato" onClick={(e) => { e.preventDefault(); go('/contato'); }}>
+              <span className="sidebar-cat-left">
+                <span className="sidebar-cat-icon">✉️</span>
+                <span>Fale Conosco</span>
+              </span>
+              <span className="sidebar-cat-arrow">›</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      {/* Tópicos em Alta */}
+      <div className="sidebar-panel">
+        <p className="eyebrow">Tópicos em Alta</p>
+        <div className="sidebar-topic-cloud">
+          <span className="topic-pill">#RomaAntiga</span>
+          <span className="topic-pill">#Cartago</span>
+          <span className="topic-pill">#GrandesNavegações</span>
+          <span className="topic-pill">#BrasilImperial</span>
+          <span className="topic-pill">#Ucronias</span>
+          <span className="topic-pill">#Anticítera</span>
+        </div>
+      </div>
+
+      {/* Espaço Cultural & Apoio */}
+      <div className="sidebar-sponsor-widget">
+        <div className="sponsor-widget-header">
+          <span className="sponsor-tag">Parceria Cultural</span>
+        </div>
+        <div className="sponsor-widget-content">
+          <strong>Apoie a Revista</strong>
+          <p>Deseja divulgar sua obra literária, artigo ou projeto para os nossos leitores?</p>
+          <a
+            href="/contato"
+            onClick={(e) => { e.preventDefault(); go('/contato'); }}
+            className="sponsor-link"
+          >
+            Fale com a redação →
+          </a>
+        </div>
+      </div>
+    </aside>
+  );
 }
 
 function Category({ slug, articles }) {
