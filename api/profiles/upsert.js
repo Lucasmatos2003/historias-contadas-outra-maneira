@@ -4,7 +4,7 @@ export default async function handler(request, response) {
   if (!['GET', 'POST'].includes(request.method)) return response.status(405).json({ error: 'Method not allowed' });
   try {
     const user = await verifyUser(request);
-    rateLimit(request, `profile:${user.uid}`, 20, 15 * 60 * 1000);
+    rateLimit(request, `profile:${user.uid}`, 60, 15 * 60 * 1000);
     const database = supabaseAdmin();
     if (request.method === 'GET') {
       const { data: profile, error } = await database.from('profiles').select('*').eq('uid', user.uid).maybeSingle();
