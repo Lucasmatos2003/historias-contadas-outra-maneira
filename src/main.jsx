@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { articles, categoryInfo } from './data';
 import { getAccessToken, isConfigured, mapUser, supabase } from './supabase';
@@ -719,6 +719,7 @@ function formatSupabaseArticle(row) {
     readingTime,
     date,
     image: row.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1400&q=85',
+    secondaryImage: row.secondary_image || '',
     content,
     featured: false
   };
@@ -729,7 +730,38 @@ function Article({ slug, articles, user }) {
   if (!article) return <NotFound />;
   useEffect(() => { document.title = `${article.title} | Histórias Contadas de Outra Maneira`; }, [article]);
   const paragraphs = (Array.isArray(article.content) ? article.content : String(article.content).split('\n')).filter(Boolean);
-  return <main className="container article-layout"><article className="article-content-panel"><div className="article-header"><p className="eyebrow">{article.category}</p><h2>{article.title}</h2><div className="meta-row"><span>Por {article.author}</span><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div><div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} /><div className="article-body">{paragraphs.map((paragraph, idx) => <p key={idx}>{paragraph}</p>)}</div></article><Sidebar user={user} /></main>;
+  const midPoint = Math.max(1, Math.floor(paragraphs.length / 2));
+  const firstHalf = paragraphs.slice(0, midPoint);
+  const secondHalf = paragraphs.slice(midPoint);
+
+  return (
+    <main className="container article-layout">
+      <article className="article-content-panel">
+        <div className="article-header">
+          <p className="eyebrow">{article.category}</p>
+          <h2>{article.title}</h2>
+          <div className="meta-row">
+            <span>Por {article.author}</span>
+            <span>{article.readingTime}</span>
+            <span>{article.date}</span>
+          </div>
+          <FavoriteButton slug={article.slug} />
+        </div>
+        <div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} />
+        <div className="article-body">
+          {firstHalf.map((paragraph, idx) => <p key={idx}>{paragraph}</p>)}
+          {article.secondaryImage && (
+            <figure className="article-body-figure">
+              <img src={article.secondaryImage} alt={`Ilustração para ${article.title}`} className="article-body-image" />
+              <figcaption className="article-body-caption">Ilustração enviada pelo autor</figcaption>
+            </figure>
+          )}
+          {secondHalf.map((paragraph, idx) => <p key={idx + midPoint}>{paragraph}</p>)}
+        </div>
+      </article>
+      <Sidebar user={user} />
+    </main>
+  );
 }
 
 function ReviewAdmin({ user, onArticleApproved }) {
@@ -908,7 +940,10 @@ function ReviewAdmin({ user, onArticleApproved }) {
                       <span>{article.author_name} · {article.author_email}</span>
                       <span>{article.created_at ? new Date(article.created_at).toLocaleDateString('pt-BR') : 'Data pendente'}</span>
                     </div>
-                    {article.cover_image && <img className="review-cover-preview" src={article.cover_image} alt="" />}
+                    <div className="review-item-images-preview">
+                      {article.cover_image && <img className="review-cover-preview" src={article.cover_image} alt="Capa" title="Foto de Capa" />}
+                      {article.secondary_image && <img className="review-cover-preview" src={article.secondary_image} alt="Segunda foto" title="Segunda Imagem" />}
+                    </div>
                     <details>
                       <summary>Ver texto completo</summary>
                       <div className="review-text">
@@ -1043,8 +1078,177 @@ function ReviewAdmin({ user, onArticleApproved }) {
   );
 }
 
+function processImageFile(file, maxWidth = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file) return reject(new Error('Nenhum arquivo selecionado.'));
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      return reject(new Error('Formato inválido. Selecione uma imagem JPG, PNG ou WebP.'));
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return reject(new Error('A imagem deve ter no máximo 10 MB.'));
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Erro ao ler a imagem.'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Erro ao processar dados da imagem.'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        try {
+          const webpData = canvas.toDataURL('image/webp', quality);
+          if (webpData.startsWith('data:image/webp')) {
+            return resolve(webpData);
+          }
+        } catch {}
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function ImageUploadField({ label, hint, value, onChange, secondary = false, id = 'img-input' }) {
+  const [mode, setMode] = useState(value && !value.startsWith('data:') ? 'url' : 'file');
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProcessing(true);
+    setError('');
+    try {
+      const optimized = await processImageFile(file);
+      onChange(optimized);
+    } catch (err) {
+      setError(err.message || 'Erro ao processar imagem.');
+    } finally {
+      setProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleClear = () => {
+    onChange('');
+    setError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  return (
+    <div className="image-upload-container">
+      <div className="image-upload-header">
+        <label className="image-upload-label" htmlFor={mode === 'url' ? `${id}-url` : id}>
+          {label}
+          {secondary && <span className="optional-badge">Opcional</span>}
+        </label>
+        <div className="image-upload-mode-toggle">
+          <button
+            type="button"
+            className={`mode-btn ${mode === 'file' ? 'active' : ''}`}
+            onClick={() => setMode('file')}
+          >
+            Upload do aparelho
+          </button>
+          <button
+            type="button"
+            className={`mode-btn ${mode === 'url' ? 'active' : ''}`}
+            onClick={() => setMode('url')}
+          >
+            Link URL
+          </button>
+        </div>
+      </div>
+
+      {mode === 'file' ? (
+        <div className="file-upload-dropzone">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleFile}
+            id={id}
+            className="file-input-hidden"
+          />
+          {!value ? (
+            <label htmlFor={id} className="dropzone-trigger">
+              <span className="dropzone-icon">📷</span>
+              <strong>{processing ? 'Processando e otimizando imagem...' : 'Clique para selecionar foto do seu dispositivo'}</strong>
+              <span className="dropzone-hint">Formatos JPG, PNG ou WebP (compressão automática de alta qualidade)</span>
+            </label>
+          ) : (
+            <div className="image-preview-card">
+              <img src={value} alt="Prévia da foto" className="image-preview-thumb" />
+              <div className="image-preview-info">
+                <span className="image-preview-tag">✓ Foto carregada com sucesso</span>
+                <div className="image-preview-actions">
+                  <label htmlFor={id} className="button button-secondary button-sm">
+                    {processing ? 'Processando...' : 'Trocar foto'}
+                  </label>
+                  <button type="button" className="button button-danger-ghost button-sm" onClick={handleClear}>
+                    Remover foto
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="url-input-block">
+          <input
+            id={`${id}-url`}
+            type="url"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="https://exemplo.com/imagem.jpg"
+            className="url-input-field"
+          />
+          {value && (
+            <div className="image-preview-card">
+              <img
+                src={value}
+                alt="Prévia via URL"
+                className="image-preview-thumb"
+                onError={() => setError('Não foi possível carregar a imagem deste endereço URL.')}
+              />
+              <div className="image-preview-info">
+                <span className="image-preview-tag">Prévia via URL</span>
+                <button type="button" className="button button-danger-ghost button-sm" onClick={handleClear}>
+                  Limpar URL
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && <p className="image-upload-error">{error}</p>}
+      {hint && !error && <span className="field-hint">{hint}</span>}
+    </div>
+  );
+}
+
 function SubmitArticle({ user }) {
-  const [form, setForm] = useState({ title: '', excerpt: '', content: '', category: 'historia-alternativa', coverImage: '' });
+  const [form, setForm] = useState({
+    title: '',
+    excerpt: '',
+    content: '',
+    category: 'historia-alternativa',
+    coverImage: '',
+    secondaryImage: ''
+  });
   const [payment, setPayment] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -1107,49 +1311,115 @@ function SubmitArticle({ user }) {
     }
   };
 
-  return <main className="container single-page submit-page">
-    <section className="contact-card">
-      <p className="eyebrow">Publicação</p>
-      <h2>Submeter artigo</h2>
-      <p className="form-intro">Envie seu texto para avaliação. A taxa de submissão é de R$ 5,00 via Pix.</p>
-      
-      <div className="submission-youtube-notice">
-        <div className="yt-notice-icon">🎬</div>
-        <div className="yt-notice-content">
-          <strong>Sua história pode virar vídeo no YouTube!</strong>
-          <p>
-            Artigos aprovados pela nossa curadoria podem ser selecionados para serem gravados e narrados como roteiros no canal oficial{' '}
-            <a href="https://www.youtube.com/@ALTERNATIVAHISTORIA" target="_blank" rel="noopener noreferrer">
-              @ALTERNATIVAHISTORIA
-            </a>, com menção e todos os créditos à sua autoria.
-          </p>
+  return (
+    <main className="container single-page submit-page">
+      <section className="contact-card">
+        <p className="eyebrow">Publicação</p>
+        <h2>Submeter artigo</h2>
+        <p className="form-intro">Envie seu texto e imagens para avaliação editorial. A taxa de submissão é de R$ 5,00 via Pix.</p>
+        
+        <div className="submission-youtube-notice">
+          <div className="yt-notice-icon">🎬</div>
+          <div className="yt-notice-content">
+            <strong>Sua história pode virar vídeo no YouTube!</strong>
+            <p>
+              Artigos aprovados pela nossa curadoria podem ser selecionados para serem gravados e narrados como roteiros no canal oficial{' '}
+              <a href="https://www.youtube.com/@ALTERNATIVAHISTORIA" target="_blank" rel="noopener noreferrer">
+                @ALTERNATIVAHISTORIA
+              </a>, com menção e todos os créditos à sua autoria.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <form className="contact-form" onSubmit={submit}>
-        <label>Título<input required minLength="10" maxLength="160" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
-        <label>E-mail do autor<input required type="email" value={user.email || ''} readOnly /></label>
-        <label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option value="historia-alternativa">História Alternativa</option><option value="curiosidades-geradas">Curiosidades Geradas</option></select></label>
-        <label>Imagem de capa (URL)<input type="url" value={form.coverImage} onChange={(event) => setForm({ ...form, coverImage: event.target.value })} placeholder="https://exemplo.com/imagem.jpg" /><span className="field-hint">Opcional. Use uma imagem pública e autorizada.</span></label>
-        <label>Resumo<textarea required minLength="20" maxLength="500" rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label>
-        <label>Texto<textarea required minLength="100" rows="10" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label>
-        <button className="button button-primary" type="submit" disabled={loading}>{loading ? 'Gerando Pix...' : 'Submeter artigo — R$ 5,00'}</button>
-      </form>
-      {message && <p className="form-message" role="status">{message}</p>}
-    </section>
-    {payment && <div className="payment-overlay" role="dialog" aria-modal="true" aria-labelledby="payment-title">
-      <div className="payment-modal">
-        <button className="search-close" aria-label="Fechar cobrança" onClick={() => setPayment(null)}>×</button>
-        <p className="eyebrow">Pagamento seguro</p>
-        <h2 id="payment-title">Pague R$ 5,00 via Pix</h2>
-        <p>Após a confirmação, o artigo será encaminhado automaticamente para revisão.</p>
-        {payment.qrCodeBase64 && <img className="pix-qr" src={`data:image/png;base64,${payment.qrCodeBase64}`} alt="QR Code Pix para pagamento" />}
-        <label className="copy-field">Pix Copia e Cola<input readOnly value={payment.qrCode || ''} onFocus={(event) => event.target.select()} /></label>
-        <button className="button button-primary" onClick={() => navigator.clipboard?.writeText(payment.qrCode || '')}>Copiar código Pix</button>
-        <span className="payment-status">Aguardando confirmação automática...</span>
-      </div>
-    </div>}
-  </main>;
+        <form className="contact-form" onSubmit={submit}>
+          <label>
+            Título
+            <input
+              required
+              minLength="10"
+              maxLength="160"
+              value={form.title}
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
+              placeholder="Ex: E se Roma tivesse perdido a Segunda Guerra Púnica?"
+            />
+          </label>
+          <label>
+            E-mail do autor
+            <input required type="email" value={user.email || ''} readOnly />
+          </label>
+          <label>
+            Categoria
+            <select
+              value={form.category}
+              onChange={(event) => setForm({ ...form, category: event.target.value })}
+            >
+              <option value="historia-alternativa">História Alternativa</option>
+              <option value="curiosidades-geradas">Curiosidades Geradas</option>
+            </select>
+          </label>
+
+          <ImageUploadField
+            label="Foto 1: Imagem de Capa (Principal)"
+            hint="Exibida em destaque no topo do artigo e nos cards de listagem."
+            value={form.coverImage}
+            onChange={(val) => setForm({ ...form, coverImage: val })}
+            id="submit-cover"
+          />
+
+          <ImageUploadField
+            label="Foto 2: Segunda Imagem do Artigo"
+            hint="Opcional. Exibida no corpo do texto para ilustrar a narrativa."
+            value={form.secondaryImage}
+            onChange={(val) => setForm({ ...form, secondaryImage: val })}
+            secondary={true}
+            id="submit-sec"
+          />
+
+          <label>
+            Resumo
+            <textarea
+              required
+              minLength="20"
+              maxLength="500"
+              rows="3"
+              value={form.excerpt}
+              onChange={(event) => setForm({ ...form, excerpt: event.target.value })}
+              placeholder="Uma síntese cativante do que o leitor encontrará no artigo..."
+            />
+          </label>
+          <label>
+            Texto completo
+            <textarea
+              required
+              minLength="100"
+              rows="10"
+              value={form.content}
+              onChange={(event) => setForm({ ...form, content: event.target.value })}
+              placeholder="Desenvolva sua hipótese ou curiosidade histórica com argumentos sólidos e detalhes envolventes..."
+            />
+          </label>
+          <button className="button button-primary" type="submit" disabled={loading}>
+            {loading ? 'Gerando Pix...' : 'Submeter artigo — R$ 5,00'}
+          </button>
+        </form>
+        {message && <p className="form-message" role="status">{message}</p>}
+      </section>
+      {payment && (
+        <div className="payment-overlay" role="dialog" aria-modal="true" aria-labelledby="payment-title">
+          <div className="payment-modal">
+            <button className="search-close" aria-label="Fechar cobrança" onClick={() => setPayment(null)}>×</button>
+            <p className="eyebrow">Pagamento seguro</p>
+            <h2 id="payment-title">Pague R$ 5,00 via Pix</h2>
+            <p>Após a confirmação, o artigo será encaminhado automaticamente para revisão.</p>
+            {payment.qrCodeBase64 && <img className="pix-qr" src={`data:image/png;base64,${payment.qrCodeBase64}`} alt="QR Code Pix para pagamento" />}
+            <label className="copy-field">Pix Copia e Cola<input readOnly value={payment.qrCode || ''} onFocus={(event) => event.target.select()} /></label>
+            <button className="button button-primary" onClick={() => navigator.clipboard?.writeText(payment.qrCode || '')}>Copiar código Pix</button>
+            <span className="payment-status">Aguardando confirmação automática...</span>
+          </div>
+        </div>
+      )}
+    </main>
+  );
 }
 
 function AuthPage({ mode = 'login', registrationSuccess = false }) {
@@ -1233,18 +1503,190 @@ function formatReviewDate(value) {
   return value ? new Date(value).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }) : 'Data pendente';
 }
 
-function WriterArticleReview({ article }) {
+function WriterArticleReview({ article, onEdit }) {
   const details = reviewStatusDetails[article.status] || { label: article.status, description: 'Status atualizado pela equipe editorial.' };
-  return <article className="review-item">
-    <div className="review-item-content">
-      <div className="review-item-heading"><span className="tag">{article.category}</span><span className={`review-status status-${article.status}`}>{details.label}</span></div>
-      <h4>{article.title}</h4>
-      <p>{article.excerpt}</p>
-      <div className="review-timeline"><span>Enviado em {formatReviewDate(article.created_at)}</span>{article.reviewed_at && <span>Revisado em {formatReviewDate(article.reviewed_at)}</span>}</div>
-      <p className="review-description">{details.description}</p>
-      {article.status === 'rejeitado' && article.review_note && <div className="review-note"><strong>Orientação da equipe:</strong><p>{article.review_note}</p></div>}
+  return (
+    <article className="review-item">
+      <div className="review-item-content">
+        <div className="review-item-heading">
+          <span className="tag">{article.category}</span>
+          <span className={`review-status status-${article.status}`}>{details.label}</span>
+        </div>
+        <h4>{article.title}</h4>
+        <p>{article.excerpt}</p>
+        <div className="review-timeline">
+          <span>Enviado em {formatReviewDate(article.created_at)}</span>
+          {article.reviewed_at && <span>Revisado em {formatReviewDate(article.reviewed_at)}</span>}
+          {article.updated_at && article.updated_at !== article.created_at && <span>Modificado em {formatReviewDate(article.updated_at)}</span>}
+        </div>
+        <p className="review-description">{details.description}</p>
+        {article.status === 'rejeitado' && article.review_note && (
+          <div className="review-note">
+            <strong>Orientação da equipe:</strong>
+            <p>{article.review_note}</p>
+          </div>
+        )}
+        <div className="review-item-footer">
+          <div className="review-item-images-preview">
+            {article.cover_image && <img src={article.cover_image} alt="Capa" className="review-mini-thumb" title="Foto de capa" />}
+            {article.secondary_image && <img src={article.secondary_image} alt="Secundária" className="review-mini-thumb" title="Segunda foto" />}
+          </div>
+          <button
+            type="button"
+            className="button button-secondary button-sm writer-edit-btn"
+            onClick={() => onEdit?.(article)}
+          >
+            ✏️ Editar artigo & fotos
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function EditArticleModal({ article, onClose, onUpdated }) {
+  const [form, setForm] = useState({
+    title: article.title || '',
+    excerpt: article.excerpt || '',
+    content: Array.isArray(article.content) ? article.content.join('\n\n') : (article.content || ''),
+    category: article.category === 'curiosidades-geradas' || article.category === 'Curiosidades Geradas' ? 'curiosidades-geradas' : 'historia-alternativa',
+    coverImage: article.cover_image || article.image || '',
+    secondaryImage: article.secondary_image || article.secondaryImage || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      const token = await getAccessToken();
+      const response = await fetch('/api/articles/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: article.id,
+          ...form
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Não foi possível salvar as alterações.');
+      }
+      setSuccessMsg('Artigo e fotos atualizados com sucesso!');
+      setTimeout(() => {
+        onUpdated?.(data.article || { id: article.id, ...form });
+      }, 900);
+    } catch (err) {
+      setError(err.message || 'Erro ao salvar alterações.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="payment-overlay" role="dialog" aria-modal="true" aria-labelledby="edit-article-title">
+      <div className="payment-modal edit-article-modal">
+        <div className="edit-modal-header">
+          <div>
+            <p className="eyebrow">Edição do Escritor</p>
+            <h2 id="edit-article-title">Modificar artigo & imagens</h2>
+          </div>
+          <button className="search-close" aria-label="Fechar edição" onClick={onClose}>×</button>
+        </div>
+
+        {article.status === 'rejeitado' && article.review_note && (
+          <div className="review-note review-note-alert">
+            <strong>Orientação da equipe editorial:</strong>
+            <p>{article.review_note}</p>
+            <small>Ao salvar suas correções, o artigo voltará para a fila de revisão automaticamente.</small>
+          </div>
+        )}
+
+        <form className="contact-form edit-form" onSubmit={handleSave}>
+          <label>
+            Título
+            <input
+              required
+              minLength="10"
+              maxLength="160"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Categoria
+            <select
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+            >
+              <option value="historia-alternativa">História Alternativa</option>
+              <option value="curiosidades-geradas">Curiosidades Geradas</option>
+            </select>
+          </label>
+
+          <ImageUploadField
+            label="Foto 1: Imagem de Capa (Principal)"
+            hint="Exibida no topo do artigo e nos cards de listagem."
+            value={form.coverImage}
+            onChange={(val) => setForm({ ...form, coverImage: val })}
+            id="edit-cover"
+          />
+
+          <ImageUploadField
+            label="Foto 2: Segunda Imagem do Artigo"
+            hint="Opcional. Exibida no corpo do texto para ilustrar o conteúdo."
+            value={form.secondaryImage}
+            onChange={(val) => setForm({ ...form, secondaryImage: val })}
+            secondary={true}
+            id="edit-sec"
+          />
+
+          <label>
+            Resumo
+            <textarea
+              required
+              minLength="20"
+              maxLength="500"
+              rows="3"
+              value={form.excerpt}
+              onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+            />
+          </label>
+
+          <label>
+            Texto completo
+            <textarea
+              required
+              minLength="100"
+              rows="10"
+              value={form.content}
+              onChange={(e) => setForm({ ...form, content: e.target.value })}
+            />
+          </label>
+
+          {error && <p className="form-message" role="alert">{error}</p>}
+          {successMsg && <p className="success-message" role="status">{successMsg}</p>}
+
+          <div className="edit-modal-actions">
+            <button type="button" className="button button-secondary" onClick={onClose} disabled={loading}>
+              Cancelar
+            </button>
+            <button type="submit" className="button button-primary" disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar alterações'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  </article>;
+  );
 }
 
 function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfileUpdated, registrationSuccess = false }) {
@@ -1253,10 +1695,12 @@ function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfi
   const [myArticles, setMyArticles] = useState([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
   const [articlesError, setArticlesError] = useState('');
+  const [editingArticle, setEditingArticle] = useState(null);
   const [displayName, setDisplayName] = useState(profile?.displayName || user.displayName || '');
   const [photoURL, setPhotoURL] = useState(profile?.photoURL || user.photoURL || '');
   const [savingProfile, setSavingProfile] = useState(false);
   const isEmailVerified = Boolean(user.emailVerified || profile?.role === 'admin' || isAdmin);
+
   useEffect(() => {
     let active = true;
     const loadArticles = async () => {
@@ -1275,10 +1719,12 @@ function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfi
     loadArticles();
     return () => { active = false; };
   }, [user]);
+
   useEffect(() => {
     setDisplayName(profile?.displayName || user.displayName || '');
     setPhotoURL(profile?.photoURL || user.photoURL || '');
   }, [profile?.displayName, profile?.photoURL, user.displayName, user.photoURL]);
+
   const saveProfile = async (event) => {
     event.preventDefault();
     const name = displayName.trim();
@@ -1305,6 +1751,7 @@ function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfi
       setSavingProfile(false);
     }
   };
+
   const resend = async () => {
     try {
       const { error } = await supabase.auth.resend({ type: 'signup', email: user.email });
@@ -1314,6 +1761,7 @@ function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfi
       setMessage(err?.message || 'Erro ao reenviar e-mail.');
     }
   };
+
   const verify = async () => {
     try {
       const refreshed = await onVerified?.();
@@ -1326,6 +1774,7 @@ function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfi
       setMessage(err?.message || 'Não foi possível verificar no momento.');
     }
   };
+
   const selectPhoto = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1339,7 +1788,79 @@ function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfi
     reader.onerror = () => setMessage('Não foi possível carregar a imagem.');
     reader.readAsDataURL(file);
   };
-  return <main className="container single-page profile-page">{registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}<section className="profile-hero"><label className="profile-photo-picker" title="Escolher foto de perfil"><Avatar name={user.displayName || user.email || 'P'} photoURL={photoURL || user.photoURL} /><input type="file" accept="image/jpeg,image/png,image/webp" onChange={selectPhoto} aria-label="Escolher foto de perfil" /></label><div><p className="eyebrow">Perfil do escritor</p><h2>{user.displayName || 'Escritor'}</h2><p>{user.email}</p><span className={`tag ${isEmailVerified ? '' : 'tag-warning'}`}>{isEmailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span><small className="photo-hint">Clique na foto para alterar</small></div></section><form className="profile-name-form" onSubmit={saveProfile}><label>Nome público<input required minLength="2" maxLength="80" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como você quer aparecer nos artigos?" /></label><button className="button button-secondary" disabled={savingProfile}>{savingProfile ? 'Salvando...' : 'Salvar perfil'}</button></form>{!isEmailVerified && <div className="verification-box"><strong>Confirme seu e-mail para escrever artigos</strong><p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p><div className="profile-actions"><button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button><button className="button button-secondary" onClick={resend}>Reenviar e-mail</button></div></div>}{message && <p className="form-message" role="status">{message}</p>}<section className="profile-actions"><button className="button button-primary" disabled={!isEmailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button><button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button><button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button></section><section className="my-articles"><div className="section-head"><div><p className="eyebrow">Área do escritor</p><h3>Meus artigos</h3><p className="section-caption">Acompanhe o andamento de cada envio e as orientações da equipe editorial.</p></div></div>{articlesLoading && <LoadingState label="Carregando seus artigos..." />}{articlesError && <p className="form-message" role="alert">{articlesError}</p>}{!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}{myArticles.map((article) => <WriterArticleReview article={article} key={article.id} />)}</section></main>;
+
+  return (
+    <main className="container single-page profile-page">
+      {registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Enviamos um link de confirmação para seu e-mail.</p>}
+      <section className="profile-hero">
+        <label className="profile-photo-picker" title="Escolher foto de perfil">
+          <Avatar name={user.displayName || user.email || 'P'} photoURL={photoURL || user.photoURL} />
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={selectPhoto} aria-label="Escolher foto de perfil" />
+        </label>
+        <div>
+          <p className="eyebrow">Perfil do escritor</p>
+          <h2>{user.displayName || 'Escritor'}</h2>
+          <p>{user.email}</p>
+          <span className={`tag ${isEmailVerified ? '' : 'tag-warning'}`}>{isEmailVerified ? 'E-mail verificado' : 'E-mail pendente de verificação'}</span>
+          <small className="photo-hint">Clique na foto para alterar</small>
+        </div>
+      </section>
+      <form className="profile-name-form" onSubmit={saveProfile}>
+        <label>
+          Nome público
+          <input required minLength="2" maxLength="80" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Como você quer aparecer nos artigos?" />
+        </label>
+        <button className="button button-secondary" disabled={savingProfile}>{savingProfile ? 'Salvando...' : 'Salvar perfil'}</button>
+      </form>
+      {!isEmailVerified && (
+        <div className="verification-box">
+          <strong>Confirme seu e-mail para escrever artigos</strong>
+          <p>Enviamos um link de confirmação para <b>{user.email}</b>. A submissão ficará bloqueada até a confirmação.</p>
+          <div className="profile-actions">
+            <button className="button button-primary" onClick={verify}>Já confirmei meu e-mail</button>
+            <button className="button button-secondary" onClick={resend}>Reenviar e-mail</button>
+          </div>
+        </div>
+      )}
+      {message && <p className="form-message" role="status">{message}</p>}
+      <section className="profile-actions">
+        <button className="button button-primary" disabled={!isEmailVerified} onClick={() => go('/submeter')}>Escrever novo artigo</button>
+        <button className="button button-secondary" onClick={() => go(`/escritor/${user.uid}`)}>Ver perfil público</button>
+        <button className="button button-secondary" onClick={() => { if (!window.__unsavedArticle || window.confirm('Você tem alterações não salvas. Deseja sair mesmo assim?')) onLogout(); }}>Sair da conta</button>
+      </section>
+      <section className="my-articles">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Área do escritor</p>
+            <h3>Meus artigos</h3>
+            <p className="section-caption">Acompanhe o andamento de cada envio, modifique textos ou fotos e visualize as orientações da equipe editorial.</p>
+          </div>
+        </div>
+        {articlesLoading && <LoadingState label="Carregando seus artigos..." />}
+        {articlesError && <p className="form-message" role="alert">{articlesError}</p>}
+        {!articlesLoading && !articlesError && !myArticles.length && <p className="empty-state">Você ainda não enviou nenhum artigo.</p>}
+        {myArticles.map((article) => (
+          <WriterArticleReview
+            article={article}
+            key={article.id}
+            onEdit={(art) => setEditingArticle(art)}
+          />
+        ))}
+      </section>
+
+      {editingArticle && (
+        <EditArticleModal
+          article={editingArticle}
+          onClose={() => setEditingArticle(null)}
+          onUpdated={(updated) => {
+            setMyArticles((prev) => prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a)));
+            setEditingArticle(null);
+            setMessage('Artigo e imagens atualizados com sucesso!');
+          }}
+        />
+      )}
+    </main>
+  );
 }
 
 function StaticPage({ type }) {

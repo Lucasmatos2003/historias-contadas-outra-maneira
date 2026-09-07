@@ -20,6 +20,7 @@ create table if not exists public.articles (
   author_name text not null default 'Escritor',
   author_uid uuid not null references auth.users(id) on delete cascade,
   cover_image text not null default '',
+  secondary_image text not null default '',
   status text not null default 'pendente_revisao'
     check (status in ('pendente_pagamento', 'pagamento_erro', 'pendente_revisao', 'aprovado', 'rejeitado')),
   review_note text not null default '',

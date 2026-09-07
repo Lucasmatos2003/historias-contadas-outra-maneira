@@ -17,6 +17,7 @@ export default async function handler(request, response) {
       author_name: user.name || user.email?.split('@')[0] || 'Escritor',
       author_uid: user.uid,
       cover_image: article.coverImage,
+      secondary_image: article.secondaryImage || '',
       status: process.env.MERCADOPAGO_ACCESS_TOKEN && !isAdmin ? 'pendente_pagamento' : 'pendente_revisao'
     });
 

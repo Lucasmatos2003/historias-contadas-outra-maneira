@@ -114,9 +114,11 @@ async function getArticlesByAuthor(uid) {
         id: article.id,
         title: article.title,
         excerpt: article.excerpt,
+        content: article.content || '',
         category: article.category,
         author_name: article.author_name || 'Escritor',
         cover_image: article.cover_image || '',
+        secondary_image: article.secondary_image || '',
         status: article.status,
         review_note: article.review_note || '',
         created_at: serializeDate(article.created_at),
@@ -167,6 +169,7 @@ async function getAllArticles() {
       author_name: article.author_name || 'Escritor',
       author_uid: article.author_uid,
       cover_image: article.cover_image || '',
+      secondary_image: article.secondary_image || '',
       status: article.status,
       created_at: serializeDate(article.created_at),
       review_note: article.review_note || ''
@@ -230,6 +233,7 @@ function validateArticle(payload) {
   const content = typeof payload?.content === 'string' ? payload.content.trim() : '';
   const authorEmail = typeof payload?.authorEmail === 'string' ? payload.authorEmail.trim().toLowerCase() : '';
   const coverImage = typeof payload?.coverImage === 'string' ? payload.coverImage.trim() : '';
+  const secondaryImage = typeof payload?.secondaryImage === 'string' ? payload.secondaryImage.trim() : '';
   const category = payload?.category === 'historia-alternativa' || payload?.category === 'curiosidades-geradas'
     ? payload.category
     : '';
@@ -239,12 +243,19 @@ function validateArticle(payload) {
   if (content.length < 100 || content.length > 50000) throw new RequestError('O texto deve ter entre 100 e 50.000 caracteres.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(authorEmail)) throw new RequestError('Informe um e-mail válido.');
   if (!category) throw new RequestError('Selecione uma categoria válida.');
-  if (coverImage && (!/^https?:\/\/[^\s]{1,1900}$/i.test(coverImage))) throw new RequestError('Informe uma URL de imagem válida.');
+
+  const isValidImage = (value) => {
+    if (!value) return true;
+    return /^https?:\/\/[^\s]{1,1900}$/i.test(value) || /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]{1,5000000}$/.test(value);
+  };
+
+  if (!isValidImage(coverImage)) throw new RequestError('A imagem de capa deve ser uma URL válida ou upload JPG, PNG ou WebP.');
+  if (!isValidImage(secondaryImage)) throw new RequestError('A imagem secundária deve ser uma URL válida ou upload JPG, PNG ou WebP.');
   if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(`${title}${excerpt}${content}`)) {
     throw new RequestError('O conteúdo contém caracteres inválidos.');
   }
 
-  return { title, excerpt, content, authorEmail, category, coverImage };
+  return { title, excerpt, content, authorEmail, category, coverImage, secondaryImage };
 }
 
 export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, supabaseAdmin, updateArticle, validateArticle, validateProfilePhoto, verifyAdmin, verifyMercadoPagoSignature, verifyUser };

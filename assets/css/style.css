@@ -2536,6 +2536,318 @@ body[data-theme='light'] .curiosity-feature-card:hover {
   font-size: 0.82rem;
 }
 
+/* ============================================================
+   IMAGE UPLOAD COMPONENT (FILE & URL WITH DUAL PHOTOS)
+   ============================================================ */
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: rgba(18, 32, 48, 0.5);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.image-upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.image-upload-label {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 !important;
+}
+
+.optional-badge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.image-upload-mode-toggle {
+  display: inline-flex;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-btn.active {
+  background: rgba(217, 179, 108, 0.18);
+  color: var(--gold-soft);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.file-input-hidden {
+  display: none !important;
+}
+
+.dropzone-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  background: rgba(12, 22, 34, 0.7);
+  border: 2px dashed rgba(217, 179, 108, 0.35);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.dropzone-trigger:hover {
+  border-color: var(--gold);
+  background: rgba(217, 179, 108, 0.06);
+}
+
+.dropzone-icon {
+  font-size: 2rem;
+}
+
+.dropzone-trigger strong {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.dropzone-hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.image-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(10, 18, 28, 0.8);
+  border: 1px solid rgba(217, 179, 108, 0.3);
+  border-radius: 10px;
+}
+
+.image-preview-thumb {
+  width: 90px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #000;
+  flex-shrink: 0;
+}
+
+.image-preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.image-preview-tag {
+  color: #70be82;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.image-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.button-sm {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.button-danger-ghost {
+  background: transparent;
+  border: 1px solid rgba(239, 155, 142, 0.4);
+  color: #efb2a8;
+  transition: all 0.2s;
+}
+.button-danger-ghost:hover {
+  background: rgba(220, 50, 50, 0.15);
+  border-color: #ef9b8e;
+  color: #fff;
+}
+
+.url-input-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.url-input-field {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 8px;
+}
+
+.image-upload-error {
+  color: #ef9b8e;
+  font-size: 0.82rem;
+  margin: 4px 0 0;
+}
+
+/* ============================================================
+   MODAL DE EDIÇÃO DE ARTIGO DO ESCRITOR
+   ============================================================ */
+.edit-article-modal {
+  width: min(780px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: left;
+  border-radius: 16px;
+  padding: 32px;
+}
+
+.edit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.edit-modal-header h2 {
+  margin: 4px 0 0;
+  font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+}
+
+.review-note-alert {
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+.review-note-alert small {
+  display: block;
+  margin-top: 6px;
+  color: var(--gold-soft);
+  font-size: 0.78rem;
+}
+
+.edit-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.edit-modal-actions .button {
+  width: auto;
+}
+
+/* Ilustração Secundária no Corpo do Artigo */
+.article-body-figure {
+  margin: 32px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.article-body-image {
+  width: 100%;
+  max-height: 480px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 36px var(--shadow);
+}
+
+.article-body-caption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Botão de edição na lista de artigos do escritor */
+.writer-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.review-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.review-item-images-preview {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.review-mini-thumb {
+  width: 44px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+body[data-theme='light'] .image-upload-container {
+  background: #ffffff;
+  border-color: rgba(200, 165, 90, 0.3);
+}
+body[data-theme='light'] .dropzone-trigger {
+  background: #fbf9f5;
+  border-color: rgba(180, 140, 60, 0.4);
+}
+body[data-theme='light'] .image-preview-card {
+  background: #fbf9f5;
+  border-color: rgba(180, 140, 60, 0.3);
+}
+body[data-theme='light'] .edit-article-modal {
+  background: #ffffff;
+  border-color: rgba(200, 165, 90, 0.3);
+  color: #1a1a1a;
+}
+
 .reading-progress {
   position: fixed;
   inset: 0 auto auto 0;

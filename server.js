@@ -16,6 +16,7 @@ const apiHandlers = {
   '/api/articles/public': './api/articles/public.js',
   '/api/articles/status': './api/articles/status.js',
   '/api/articles/submit': './api/articles/submit.js',
+  '/api/articles/update': './api/articles/update.js',
   '/api/contact': './api/contact.js',
   '/api/payments/webhook': './api/payments/webhook.js',
   '/api/profiles/upsert': './api/profiles/upsert.js',
@@ -61,7 +62,7 @@ async function readBody(request) {
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > 2 * 1024 * 1024) throw new Error('Payload muito grande.');
+    if (size > 10 * 1024 * 1024) throw new Error('Payload muito grande.');
     chunks.push(chunk);
   }
   if (!chunks.length) return {};
