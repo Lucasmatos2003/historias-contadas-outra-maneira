@@ -2330,7 +2330,7 @@ function PrivacyPolicyPage() {
           <ul>
             <li><strong>Google AdSense:</strong> O Google, como fornecedor terceiro, utiliza cookies (incluindo o cookie DoubleClick DART) para veicular anúncios com base nas visitas anteriores dos usuários a este ou a outros sites na internet.</li>
             <li><strong>Desativação de Anúncios Personalizados:</strong> Os leitores podem desativar a publicidade personalizada acessando as <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Configurações de Anúncios do Google</a> ou visitando o portal <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer">AboutAds.info</a>.</li>
-            <li><strong>Google Analytics:</strong> Utilizamos o Google Analytics (código de acompanhamento G-WS5640B9BV) para compreender de maneira agregada como o público interage com nossos artigos.</li>
+            <li><strong>Google Analytics:</strong> Utilizamos o Google Analytics (código de acompanhamento G-Y7MQ743JVQ) para compreender de maneira agregada como o público interage com nossos artigos.</li>
           </ul>
         </section>
 
