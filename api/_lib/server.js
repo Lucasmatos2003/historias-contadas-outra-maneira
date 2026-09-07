@@ -38,6 +38,10 @@ function publicError(error, fallback = 'Não foi possível concluir a operação
   if (error?.message === 'Acesso de administrador necessário.') return { status: 403, message: error.message };
   if (error?.status === 400) return { status: 400, message: error.message };
   console.error(error);
+  const detail = error?.message || error?.details;
+  if (detail && typeof detail === 'string' && !detail.includes('SUPABASE_') && !detail.includes('SERVICE_ROLE') && !detail.includes('KEY')) {
+    return { status: 500, message: `${fallback} (${detail})` };
+  }
   return { status: 500, message: fallback };
 }
 
@@ -88,11 +92,25 @@ function validateProfilePhoto(photoURL) {
 }
 
 async function createArticle(data) {
-  const { data: article, error } = await supabaseAdmin()
+  let { data: article, error } = await supabaseAdmin()
     .from('articles')
     .insert(data)
     .select('id')
     .single();
+
+  if (error && (error.code === '42703' || error.code === 'PGRST204' || String(error.message || '').includes('secondary_image') || String(error.details || '').includes('secondary_image'))) {
+    console.warn('Aviso: Coluna secondary_image ainda não existe no Supabase. Salvando artigo sem ela...');
+    const fallbackData = { ...data };
+    delete fallbackData.secondary_image;
+    const retry = await supabaseAdmin()
+      .from('articles')
+      .insert(fallbackData)
+      .select('id')
+      .single();
+    article = retry.data;
+    error = retry.error;
+  }
+
   if (error) throw error;
   return { id: article.id, ...data };
 }
@@ -178,10 +196,21 @@ async function getAllArticles() {
 }
 
 async function updateArticle(id, data) {
-  const { error } = await supabaseAdmin().from('articles').update({
+  const payload = {
     ...data,
     updated_at: new Date().toISOString()
-  }).eq('id', id);
+  };
+
+  let { error } = await supabaseAdmin().from('articles').update(payload).eq('id', id);
+
+  if (error && (error.code === '42703' || error.code === 'PGRST204' || String(error.message || '').includes('secondary_image') || String(error.details || '').includes('secondary_image'))) {
+    console.warn('Aviso: Coluna secondary_image ainda não existe no Supabase. Atualizando artigo sem ela...');
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.secondary_image;
+    const retry = await supabaseAdmin().from('articles').update(fallbackPayload).eq('id', id);
+    error = retry.error;
+  }
+
   if (error) throw error;
 }
 
@@ -246,7 +275,11 @@ function validateArticle(payload) {
 
   const isValidImage = (value) => {
     if (!value) return true;
-    return /^https?:\/\/[^\s]{1,1900}$/i.test(value) || /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]{1,5000000}$/.test(value);
+    if (typeof value !== 'string') return false;
+    const clean = value.trim();
+    if (/^https?:\/\/[^\s]{1,2500}$/i.test(clean)) return true;
+    if (/^data:image\/(?:jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=\s_-]{1,10000000}$/i.test(clean)) return true;
+    return false;
   };
 
   if (!isValidImage(coverImage)) throw new RequestError('A imagem de capa deve ser uma URL válida ou upload JPG, PNG ou WebP.');

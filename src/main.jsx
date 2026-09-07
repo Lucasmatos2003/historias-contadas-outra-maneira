@@ -1557,11 +1557,47 @@ function EditArticleModal({ article, onClose, onUpdated }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  useEffect(() => {
+    if (!form.content || form.content.length < 100) {
+      getAccessToken().then((token) => {
+        if (!token) return;
+        fetch('/api/articles/mine', { headers: { Authorization: `Bearer ${token}` } })
+          .then((res) => res.json())
+          .then((data) => {
+            const found = data?.articles?.find((a) => a.id === article.id);
+            if (found && found.content && found.content.length >= 100) {
+              setForm((prev) => ({
+                ...prev,
+                content: found.content,
+                coverImage: prev.coverImage || found.cover_image || '',
+                secondaryImage: prev.secondaryImage || found.secondary_image || ''
+              }));
+            }
+          })
+          .catch(() => {});
+      });
+    }
+  }, [article.id]);
+
   const handleSave = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     setSuccessMsg('');
+
+    if (!form.title.trim() || form.title.trim().length < 10) {
+      setError('O título deve ter pelo menos 10 caracteres.');
+      return;
+    }
+    if (!form.excerpt.trim() || form.excerpt.trim().length < 20) {
+      setError('O resumo deve ter pelo menos 20 caracteres.');
+      return;
+    }
+    if (!form.content.trim() || form.content.trim().length < 100) {
+      setError('O texto do artigo deve ter pelo menos 100 caracteres.');
+      return;
+    }
+
+    setLoading(true);
     try {
       const token = await getAccessToken();
       const response = await fetch('/api/articles/update', {
