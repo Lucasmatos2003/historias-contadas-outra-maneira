@@ -154,7 +154,7 @@ function Layout({ children, articles, user, profile, isAdmin, onLogout }) {
           </div>
           <p className="footer-description">Ideias, hipóteses e histórias que atravessam os caminhos conhecidos.</p>
           <div className="footer-column"><span className="footer-title">Explorar</span><a href="/" onClick={link('/')}>Início</a><a href="/categoria/historia-alternativa" onClick={link('/categoria/historia-alternativa')}>História alternativa</a><a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades</a></div>
-          <div className="footer-column"><span className="footer-title">Revista</span><a href="/sobre" onClick={link('/sobre')}>Sobre o autor</a><a href="/contato" onClick={link('/contato')}>Contato</a><a href={user ? '/submeter' : '/cadastro'} onClick={link(user ? '/submeter' : '/cadastro')}>Escreva conosco</a></div>
+          <div className="footer-column"><span className="footer-title">Revista</span><a href="/sobre" onClick={link('/sobre')}>Sobre o autor</a><a href="/contato" onClick={link('/contato')}>Contato</a><a href={user ? '/submeter' : '/cadastro'} onClick={link(user ? '/submeter' : '/cadastro')}>Escreva conosco</a><a href="https://www.youtube.com/@ALTERNATIVAHISTORIA" target="_blank" rel="noopener noreferrer">Canal YouTube ↗</a></div>
         </div>
         <div className="footer-bottom"><span>© {new Date().getFullYear()} Histórias Contadas de Outra Maneira</span><span>Feito para quem gosta de imaginar outros caminhos.</span></div>
       </footer>
@@ -205,10 +205,8 @@ function ArticleCard({ article, index = 0 }) {
   );
 }
 
-function Home({ articles }) {
+function Home({ articles, user }) {
   const go = useNavigation();
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterDone, setNewsletterDone] = useState(false);
 
   if (!articles.length) {
     return (
@@ -221,7 +219,7 @@ function Home({ articles }) {
             <a className="button button-primary" href="/sobre" onClick={(e) => { e.preventDefault(); go('/sobre'); }}>Conheça a revista</a>
           </section>
         </div>
-        <Sidebar />
+        <Sidebar user={user} />
       </main>
     );
   }
@@ -229,13 +227,6 @@ function Home({ articles }) {
   const featured = articles.find((article) => article.featured) || articles[0];
   const otherArticles = articles.filter((article) => article.slug !== featured.slug);
   const coverUrl = featured.image || featured.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80';
-
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (newsletterEmail.trim()) {
-      setNewsletterDone(true);
-    }
-  };
 
   return (
     <main className="container home-layout">
@@ -299,12 +290,9 @@ function Home({ articles }) {
                   <span className="cover-pill-category">{featured.category}</span>
                 </div>
                 <div className="cover-bottom-details">
-                  <span className="cover-gold-rule" />
-                  <strong className="cover-title-display">{featured.title}</strong>
-                  <div className="cover-action-prompt">
-                    <span>Acessar edição completa</span>
-                    <span className="prompt-arrow">↗</span>
-                  </div>
+                  <span className="cover-badge-kicker">✦ Edição Principal</span>
+                  <p className="cover-title-display">{featured.title}</p>
+                  <span className="cover-read-hint">Clique para abrir a edição completa →</span>
                 </div>
               </div>
             </a>
@@ -312,66 +300,66 @@ function Home({ articles }) {
         </section>
 
         {/* FEED DE HISTÓRIAS */}
-        <section className="section-head">
-          <div>
-            <p className="eyebrow">Últimos ensaios & narrativas</p>
-            <h3>Rumos não traçados</h3>
+        <section className="feed-section">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Edição corrente</p>
+              <h3>Mais histórias e hipóteses</h3>
+            </div>
+            <a href="/categoria/historia-alternativa" onClick={(e) => { e.preventDefault(); go('/categoria/historia-alternativa'); }}>
+              Ver acervo completo →
+            </a>
+          </div>
+          <div className="stories-grid">
+            {otherArticles.map((article, index) => (
+              <ArticleCard key={article.slug} article={article} index={index} />
+            ))}
           </div>
         </section>
 
-        <section className="article-grid">
-          {otherArticles.map((article, index) => (
-            <ArticleCard key={article.slug} article={article} index={index} />
-          ))}
-        </section>
-
-        {/* FINAL DA HOME: CURIOSIDADES REDESENHADAS */}
-        <section className="curiosities-modern-section">
+        {/* CURIOSIDADES HISTÓRICAS: NOVO DESIGN MODERNO EM CARDS */}
+        <section className="curiosity-feature-section">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Arquivo de mistérios & indícios</p>
-              <h3>Curiosidades que desafiam a lógica</h3>
+              <p className="eyebrow">Fatos que desafiam a linha do tempo</p>
+              <h3>Curiosidades & Fragmentos do Passado</h3>
             </div>
-            <a
-              href="/categoria/curiosidades-geradas"
-              onClick={(e) => { e.preventDefault(); go('/categoria/curiosidades-geradas'); }}
-              className="explore-section-link"
-            >
-              Ver todas as curiosidades →
+            <a href="/categoria/curiosidades-geradas" onClick={(e) => { e.preventDefault(); go('/categoria/curiosidades-geradas'); }}>
+              Explorar curiosidades →
             </a>
           </div>
 
           <div className="curiosity-cards-grid">
             <div className="curiosity-feature-card">
               <div className="curiosity-card-top">
-                <span className="curiosity-card-icon">🏛️</span>
-                <span className="curiosity-card-num">01</span>
+                <span className="curiosity-icon-badge">🏛️</span>
+                <span className="curiosity-number">01</span>
               </div>
-              <span className="curiosity-category-pill">Geopolítica Secreta</span>
-              <h4>Cidades que trocaram de país durante a noite</h4>
+              <span className="curiosity-category-tag">Roma & Cartago</span>
+              <h4>A vitória cartaginesa que quase desfez Roma</h4>
               <p>
-                Em tratados territoriais negociados sob sigilo, populações inteiras acordavam súditas de novas coroas e leis — e moradores levavam meses para saber a quem pagavam tributos.
+                Após Canas, Aníbal esteve a um cerco de mudar toda a história do Mediterrâneo ocidental e do direito moderno que herdamos.
               </p>
             </div>
 
             <div className="curiosity-feature-card">
               <div className="curiosity-card-top">
-                <span className="curiosity-card-icon">⚙️</span>
-                <span className="curiosity-card-num">02</span>
+                <span className="curiosity-icon-badge">⚙️</span>
+                <span className="curiosity-number">02</span>
               </div>
-              <span className="curiosity-category-pill">Mecânica Ancestral</span>
-              <h4>O computador analógico de 2.100 anos atrás</h4>
+              <span className="curiosity-category-tag">Grécia Helenística</span>
+              <h4>O computador analógico perdido de Anticítera</h4>
               <p>
-                A Máquina de Anticítera já calculava eclipses e trajetórias planetárias com 30 engrenagens de bronze de precisão milimétrica, tecnologia que só reapareceu na Europa no século XIV.
+                Engrenagens de bronze do século II a.C. calculavam eclipses e movimentos planetários séculos antes da revolução mecânica europeia.
               </p>
             </div>
 
             <div className="curiosity-feature-card">
               <div className="curiosity-card-top">
-                <span className="curiosity-card-icon">🗺️</span>
-                <span className="curiosity-card-num">03</span>
+                <span className="curiosity-icon-badge">🗺️</span>
+                <span className="curiosity-number">03</span>
               </div>
-              <span className="curiosity-category-pill">Cartografia Oculta</span>
+              <span className="curiosity-category-tag">Navegações</span>
               <h4>Mapas deliberadamente desenhados para naufragar</h4>
               <p>
                 Durante a corrida marítima renascentista, coroas desenhavam ilhas fantasmas e recifes fictícios em cópias de cartas náuticas para fazer espiões rivais naufragarem em alto-mar.
@@ -380,47 +368,98 @@ function Home({ articles }) {
           </div>
         </section>
 
-        {/* FINAL DA HOME: NEWSLETTER / MANIFESTO EDITORIAL */}
-        <section className="home-newsletter-banner">
-          <div className="newsletter-banner-body">
-            <span className="newsletter-eyebrow">✦ Edição quinzenal gratuita</span>
-            <h3>Gosta de questionar o rumo da história?</h3>
-            <p>
-              Receba análises contrafatuais, enigmas históricos resolvidos e reflexões que conectam o passado a futuros possíveis diretamente no seu e-mail.
+        {/* FINAL DA HOME: CHAMADA PARA ESCRITORES & CANAL YOUTUBE ALTERNATIVA HISTÓRIA */}
+        <section className="writer-spotlight-banner">
+          <div className="writer-banner-content">
+            <div className="writer-banner-eyebrow-row">
+              <span className="writer-badge-accent">✦ Chamada para Escritores</span>
+              <a
+                href="https://www.youtube.com/@ALTERNATIVAHISTORIA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="youtube-badge-tag"
+                title="Visitar canal Alternativa História no YouTube"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                <span>@ALTERNATIVAHISTORIA</span>
+              </a>
+            </div>
+
+            <h3 className="writer-banner-title">
+              Escreva para o blog e veja sua história virar <span className="title-highlight">roteiro de vídeo</span>!
+            </h3>
+
+            <p className="writer-banner-desc">
+              Gosta de imaginar caminhos diferentes para os grandes momentos da humanidade? Junte-se à nossa comunidade de autores. Ao submeter seu artigo contrafactual ou curiosidade inédita, sua história pode ser selecionada para se transformar no roteiro narrado de um vídeo oficial no canal <strong>Alternativa História</strong> no YouTube, com menção honrosa e todos os créditos à sua autoria!
             </p>
+
+            <div className="writer-banner-actions">
+              <a
+                href={user ? "/submeter" : "/cadastro"}
+                onClick={(e) => { e.preventDefault(); go(user ? "/submeter" : "/cadastro"); }}
+                className="button button-primary writer-cta-btn"
+              >
+                <span>{user ? "Submeter meu artigo agora" : "Inscreva-se como Escritor"}</span>
+                <span className="btn-arrow" aria-hidden="true">→</span>
+              </a>
+
+              <a
+                href="https://www.youtube.com/@ALTERNATIVAHISTORIA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="button button-youtube"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                <span>Conhecer o canal no YouTube</span>
+              </a>
+            </div>
           </div>
-          <form className="newsletter-banner-form" onSubmit={handleSubscribe}>
-            {newsletterDone ? (
-              <div className="newsletter-success-box">
-                <span className="success-check">✓</span>
+
+          <div className="writer-banner-card">
+            <div className="writer-card-header">
+              <div className="yt-card-icon">🎬</div>
+              <div>
+                <strong>Do Artigo ao Vídeo</strong>
+                <span>Como funciona a curadoria</span>
+              </div>
+            </div>
+            <ul className="writer-card-steps">
+              <li>
+                <span className="step-num">1</span>
                 <div>
-                  <strong>Inscrição confirmada!</strong>
-                  <span>Bem-vindo à nossa comunidade de leitores curiosos.</span>
+                  <strong>Cadastre-se como escritor</strong>
+                  <p>Crie sua conta para publicar e acompanhar seus artigos.</p>
                 </div>
-              </div>
-            ) : (
-              <div className="newsletter-form-fields">
-                <input
-                  type="email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder="Seu e-mail principal..."
-                  required
-                  aria-label="Seu e-mail principal"
-                />
-                <button type="submit" className="button button-primary">Inscrever-se</button>
-              </div>
-            )}
-          </form>
+              </li>
+              <li>
+                <span className="step-num">2</span>
+                <div>
+                  <strong>Envie sua hipótese ou pesquisa</strong>
+                  <p>Escreva ucronias bem fundamentadas ou curiosidades que surpreendam.</p>
+                </div>
+              </li>
+              <li>
+                <span className="step-num">3</span>
+                <div>
+                  <strong>Estreie no YouTube</strong>
+                  <p>Artigos selecionados viram roteiros narrados em vídeo com seus créditos!</p>
+                </div>
+              </li>
+            </ul>
+          </div>
         </section>
       </div>
 
-      <Sidebar />
+      <Sidebar user={user} />
     </main>
   );
 }
 
-function Sidebar() {
+function Sidebar({ user }) {
   const go = useNavigation();
   return (
     <aside className="sidebar-column">
@@ -506,21 +545,37 @@ function Sidebar() {
         </div>
       </div>
 
-      {/* Espaço Cultural & Apoio */}
-      <div className="sidebar-sponsor-widget">
-        <div className="sponsor-widget-header">
-          <span className="sponsor-tag">Parceria Cultural</span>
+      {/* Canal no YouTube & Chamada para Escritores */}
+      <div className="sidebar-youtube-card">
+        <div className="yt-card-top">
+          <span className="yt-live-pill">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            Canal no YouTube
+          </span>
+          <span className="yt-handle">@ALTERNATIVAHISTORIA</span>
         </div>
-        <div className="sponsor-widget-content">
-          <strong>Apoie a Revista</strong>
-          <p>Deseja divulgar sua obra literária, artigo ou projeto para os nossos leitores?</p>
-          <a
-            href="/contato"
-            onClick={(e) => { e.preventDefault(); go('/contato'); }}
-            className="sponsor-link"
-          >
-            Fale com a redação →
-          </a>
+        <div className="yt-card-content">
+          <strong>Alternativa História</strong>
+          <p>O canal oficial da revista! As melhores histórias enviadas pelos escritores são transformadas em roteiros narrados em vídeo.</p>
+          <div className="yt-card-actions">
+            <a
+              href="https://www.youtube.com/@ALTERNATIVAHISTORIA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button button-youtube-sm"
+            >
+              Visitar canal ↗
+            </a>
+            <a
+              href={user ? "/submeter" : "/cadastro"}
+              onClick={(e) => { e.preventDefault(); go(user ? "/submeter" : "/cadastro"); }}
+              className="sidebar-author-btn"
+            >
+              {user ? "Submeter artigo →" : "Inscreva-se como escritor →"}
+            </a>
+          </div>
         </div>
       </div>
     </aside>
@@ -648,12 +703,12 @@ function formatSupabaseArticle(row) {
   };
 }
 
-function Article({ slug, articles }) {
+function Article({ slug, articles, user }) {
   const article = articles.find((item) => item.slug === slug || item.id === slug || item.slugBase === slug);
   if (!article) return <NotFound />;
   useEffect(() => { document.title = `${article.title} | Histórias Contadas de Outra Maneira`; }, [article]);
   const paragraphs = (Array.isArray(article.content) ? article.content : String(article.content).split('\n')).filter(Boolean);
-  return <main className="container article-layout"><article className="article-content-panel"><div className="article-header"><p className="eyebrow">{article.category}</p><h2>{article.title}</h2><div className="meta-row"><span>Por {article.author}</span><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div><div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} /><div className="article-body">{paragraphs.map((paragraph, idx) => <p key={idx}>{paragraph}</p>)}</div></article><Sidebar /></main>;
+  return <main className="container article-layout"><article className="article-content-panel"><div className="article-header"><p className="eyebrow">{article.category}</p><h2>{article.title}</h2><div className="meta-row"><span>Por {article.author}</span><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div><div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} /><div className="article-body">{paragraphs.map((paragraph, idx) => <p key={idx}>{paragraph}</p>)}</div></article><Sidebar user={user} /></main>;
 }
 
 function Admin({ articles, onChange }) {
@@ -808,6 +863,20 @@ function SubmitArticle({ user }) {
       <p className="eyebrow">Publicação</p>
       <h2>Submeter artigo</h2>
       <p className="form-intro">Envie seu texto para avaliação. A taxa de submissão é de R$ 5,00 via Pix.</p>
+      
+      <div className="submission-youtube-notice">
+        <div className="yt-notice-icon">🎬</div>
+        <div className="yt-notice-content">
+          <strong>Sua história pode virar vídeo no YouTube!</strong>
+          <p>
+            Artigos aprovados pela nossa curadoria podem ser selecionados para serem gravados e narrados como roteiros no canal oficial{' '}
+            <a href="https://www.youtube.com/@ALTERNATIVAHISTORIA" target="_blank" rel="noopener noreferrer">
+              @ALTERNATIVAHISTORIA
+            </a>, com menção e todos os créditos à sua autoria.
+          </p>
+        </div>
+      </div>
+
       <form className="contact-form" onSubmit={submit}>
         <label>Título<input required minLength="10" maxLength="160" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
         <label>E-mail do autor<input required type="email" value={user.email || ''} readOnly /></label>
@@ -885,6 +954,11 @@ function AuthPage({ mode = 'login', registrationSuccess = false }) {
   };
   return <main className="container single-page"><section className="contact-card auth-card">
     <p className="eyebrow">Área do escritor</p><h2>{isLogin ? 'Entrar na sua conta' : 'Criar cadastro de escritor'}</h2>
+    {!isLogin && (
+      <p className="writer-auth-intro">
+        Publique suas histórias contrafatuais e participe da seleção para os roteiros em vídeo do canal oficial <strong>Alternativa História</strong> no YouTube!
+      </p>
+    )}
     {registrationSuccess && <p className="success-message" role="status">Cadastro feito com sucesso! Confirme seu e-mail antes de entrar.</p>}
     {!isConfigured && <AuthNotice />}
     <form className="contact-form" onSubmit={submit}>
@@ -1118,9 +1192,9 @@ function App() {
   const registrationSuccess = new URLSearchParams(window.location.search).get('cadastro') === 'sucesso';
   const isEmailVerified = Boolean(user?.emailVerified || profile?.role === 'admin' || isAdmin);
   if (loading) return <Layout articles={allArticles} profile={profile} isAdmin={false}><main className="container single-page"><section className="contact-card"><LoadingState label="Carregando sua conta..." /></section></main></Layout>;
-  let content = <Home articles={allArticles} />;
+  let content = <Home articles={allArticles} user={user} />;
   if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={allArticles} />;
-  else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={allArticles} />;
+  else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={allArticles} user={user} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <StaticPage type="contato" />;
   else if (path === '/login') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage />;
