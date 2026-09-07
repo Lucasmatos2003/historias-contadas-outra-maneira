@@ -1483,6 +1483,186 @@ h1, h2, h3, h4 {
 .contact-form label { display: grid; gap: 8px; color: var(--muted); }
 .contact-form textarea { resize: vertical; min-height: 150px; }
 
+/* ============================================================
+   PÁGINA DE CONTATO PROFISSIONAL & REDAÇÃO
+   ============================================================ */
+.contact-page-wrapper {
+  max-width: 1140px;
+  margin: 32px auto 60px;
+}
+
+.contact-page-header {
+  margin-bottom: 28px;
+}
+
+.contact-page-header h2 {
+  font-family: Georgia, serif;
+  font-size: clamp(2.2rem, 3.2vw, 3.2rem);
+  margin: 6px 0 12px;
+  color: var(--text);
+}
+
+.contact-header-lead {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 780px;
+  margin: 0;
+}
+
+.contact-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.contact-form-card {
+  margin: 0;
+  max-width: 100%;
+  background: rgba(16, 28, 42, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: clamp(24px, 3vw, 36px);
+  box-shadow: 0 16px 40px var(--shadow);
+}
+
+.contact-form-card h3 {
+  font-family: Georgia, serif;
+  font-size: 1.45rem;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.contact-form-card .form-intro {
+  margin-bottom: 22px;
+}
+
+.form-group-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.contact-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 22px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.contact-alert .alert-icon {
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.contact-alert strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.contact-alert p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.contact-alert.success {
+  background: rgba(46, 125, 50, 0.18);
+  border: 1px solid rgba(76, 175, 80, 0.45);
+  color: #bbf7d0;
+}
+
+.contact-alert.error {
+  background: rgba(198, 40, 40, 0.18);
+  border: 1px solid rgba(239, 83, 80, 0.45);
+  color: #fecaca;
+}
+
+.contact-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 26px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 9px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.contact-info-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.contact-info-card {
+  background: rgba(18, 32, 48, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px 22px;
+  box-shadow: 0 12px 30px var(--shadow);
+}
+
+.contact-info-card h4 {
+  font-family: Georgia, serif;
+  font-size: 1.15rem;
+  margin: 10px 0 8px;
+  color: var(--text);
+}
+
+.contact-info-card p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.info-card-badge {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: rgba(217, 179, 108, 0.12);
+  border: 1px solid rgba(217, 179, 108, 0.3);
+  color: var(--gold-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.youtube-highlight-card {
+  background: radial-gradient(circle at 10% 15%, rgba(220, 20, 60, 0.15), transparent 60%),
+              rgba(18, 32, 48, 0.94);
+  border-color: rgba(220, 20, 60, 0.35);
+}
+
+.youtube-highlight-card .info-card-badge {
+  background: rgba(220, 20, 60, 0.14);
+  border-color: rgba(255, 60, 60, 0.4);
+  color: #ff5252;
+}
+
+.spinner-sm {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .article-layout {
   display: grid;
   grid-template-columns: minmax(0, 2.3fr) minmax(220px, 0.8fr);
@@ -1857,6 +2037,145 @@ h1, h2, h3, h4 {
   color: var(--muted);
   font-size: 0.8rem;
 }
+
+/* ============================================================
+   ADMIN: ABAS DE NAVEGAÇÃO & CARDS DE MENSAGENS
+   ============================================================ */
+.admin-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.admin-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.admin-tab-btn.active {
+  background: rgba(217, 179, 108, 0.12);
+  border-color: rgba(217, 179, 108, 0.35);
+  color: var(--gold-soft);
+}
+
+.tab-badge-pill {
+  background: rgba(217, 179, 108, 0.2);
+  color: var(--gold);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tab-badge-pill.unread {
+  background: #cc0000;
+  color: #ffffff;
+}
+
+.admin-message-card {
+  background: rgba(18, 32, 48, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.2s;
+}
+
+.admin-message-card.is-unread {
+  border-left: 4px solid var(--gold);
+  background: rgba(22, 38, 56, 0.94);
+}
+
+.msg-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.msg-author-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.msg-author-info strong {
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.msg-email-badge {
+  color: var(--gold-soft);
+  font-size: 0.82rem;
+  background: rgba(217, 179, 108, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.msg-subject-tag {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.msg-date {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.msg-body-content p {
+  color: var(--text);
+  font-size: 0.94rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  margin: 0;
+  background: rgba(8, 16, 26, 0.4);
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.msg-actions-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.msg-reply-btn {
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: 7px;
+}
+
 
 .form-intro,
 .form-message,
@@ -2273,6 +2592,9 @@ body.light-theme .submission-youtube-notice,
 body.light-theme .newsletter-box,
 body.light-theme .sidebar-panel,
 body.light-theme .contact-card,
+body.light-theme .contact-form-card,
+body.light-theme .contact-info-card,
+body.light-theme .admin-message-card,
 body.light-theme .about-hero,
 body.light-theme .about-story,
 body.light-theme .page-intro,
@@ -2288,6 +2610,9 @@ body.light-theme .category-search-box input,
 body.light-theme .category-sort-box select {
   background: rgba(245, 240, 230, 0.9);
   color: var(--text);
+}
+body.light-theme .msg-body-content p {
+  background: rgba(245, 240, 230, 0.8);
 }
 body.light-theme .cover-title-display {
   color: #ffffff;
@@ -2318,6 +2643,17 @@ body.light-theme .cover-title-display {
   .writer-banner-actions .button {
     width: 100%;
     justify-content: center;
+  }
+  .contact-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .form-group-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-nav-tabs {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

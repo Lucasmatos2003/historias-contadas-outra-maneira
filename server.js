@@ -11,10 +11,12 @@ const port = Number(process.env.PORT || 3000);
 const apiHandlers = {
   '/api/admin/access': './api/admin/access.js',
   '/api/admin/articles': './api/admin/articles.js',
+  '/api/admin/messages': './api/admin/messages.js',
   '/api/articles/mine': './api/articles/mine.js',
   '/api/articles/public': './api/articles/public.js',
   '/api/articles/status': './api/articles/status.js',
   '/api/articles/submit': './api/articles/submit.js',
+  '/api/contact': './api/contact.js',
   '/api/payments/webhook': './api/payments/webhook.js',
   '/api/profiles/upsert': './api/profiles/upsert.js',
   '/api/writers/profile': './api/writers/profile.js'

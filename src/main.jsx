@@ -711,54 +711,52 @@ function Article({ slug, articles, user }) {
   return <main className="container article-layout"><article className="article-content-panel"><div className="article-header"><p className="eyebrow">{article.category}</p><h2>{article.title}</h2><div className="meta-row"><span>Por {article.author}</span><span>{article.readingTime}</span><span>{article.date}</span></div><FavoriteButton slug={article.slug} /></div><div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} /><div className="article-body">{paragraphs.map((paragraph, idx) => <p key={idx}>{paragraph}</p>)}</div></article><Sidebar user={user} /></main>;
 }
 
-function Admin({ articles, onChange }) {
-  const empty = { title: '', excerpt: '', category: 'História Alternativa', readingTime: '5 min', author: 'Lucas Matos', content: '' };
-  const [form, setForm] = useState(empty);
-  const [editing, setEditing] = useState(null);
-  const slugify = (value) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const submit = (event) => {
-    event.preventDefault();
-    const categorySlug = form.category === 'História Alternativa' ? 'historia-alternativa' : 'curiosidades-geradas';
-    const article = { ...form, slug: editing || slugify(form.title), categorySlug, date: 'Agora', image: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=900&q=80', content: form.content.split('\n').filter(Boolean) };
-    onChange(editing ? articles.map((item) => item.slug === editing ? { ...item, ...article } : item) : [...articles, article]);
-    setForm(empty); setEditing(null);
-  };
-  const edit = (article) => { setEditing(article.slug); setForm({ ...article, content: article.content.join('\n') }); };
-  const remove = (slug) => onChange(articles.filter((article) => article.slug !== slug));
-  return <main className="container admin-layout"><section className="contact-card"><p className="eyebrow">CMS local</p><h2>{editing ? 'Editar artigo' : 'Novo artigo'}</h2><form className="contact-form" onSubmit={submit}><label>Título<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label><label>Resumo<textarea required rows="3" value={form.excerpt} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} /></label><label>Categoria<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}><option>História Alternativa</option><option>Curiosidades Geradas</option></select></label><label>Conteúdo <span className="field-hint">Um parágrafo por linha</span><textarea required rows="7" value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label><button className="button button-primary" type="submit">{editing ? 'Salvar alterações' : 'Publicar artigo'}</button></form></section><section className="admin-list"><p className="eyebrow">Publicados localmente</p>{articles.map((article) => <div className="admin-item" key={article.slug}><strong>{article.title}</strong><div><button className="save-button" onClick={() => edit(article)}>Editar</button><button className="save-button danger" onClick={() => remove(article.slug)}>Excluir</button></div></div>)}</section></main>;
-}
-
 function ReviewAdmin({ user, onArticleApproved }) {
+  const [activeTab, setActiveTab] = useState('articles'); // 'articles' | 'messages'
   const [items, setItems] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [filter, setFilter] = useState('pendente_revisao');
+  const [messageFilter, setMessageFilter] = useState('todos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [accessDenied, setAccessDenied] = useState(false);
   const [reviewing, setReviewing] = useState(null);
   const [reviewNote, setReviewNote] = useState('');
+
   const load = async () => {
     setLoading(true);
     setError('');
     try {
       const token = await getAccessToken();
-      const response = await fetch('/api/admin/articles', { headers: { Authorization: `Bearer ${token}` } });
-      const result = await response.json();
-      if (response.status === 403) {
+      const [articlesRes, messagesRes] = await Promise.all([
+        fetch('/api/admin/articles', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/messages', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      if (articlesRes.status === 403 || messagesRes.status === 403) {
         setAccessDenied(true);
         return;
       }
-      if (!response.ok) throw new Error(result.error || 'Não foi possível carregar os artigos.');
-      setItems(result.articles || []);
+
+      const articlesData = await articlesRes.json();
+      const messagesData = await messagesRes.json();
+
+      if (!articlesRes.ok) throw new Error(articlesData.error || 'Não foi possível carregar os artigos.');
+      setItems(articlesData.articles || []);
+      setMessages(messagesData.messages || []);
     } catch (loadError) {
       setError(loadError.message);
     } finally {
       setLoading(false);
     }
   };
+
   useEffect(() => { load(); }, [user]);
+
   if (accessDenied) {
     return <main className="container single-page"><section className="contact-card access-denied"><p className="eyebrow">Acesso restrito</p><h2>Você não é administrador</h2><p>Esta área está disponível somente para a conta administrativa configurada no servidor.</p></section></main>;
   }
+
   const updateStatus = async (article, status) => {
     if (status === 'rejeitado' && reviewNote.trim().length < 10) {
       setError('Informe uma justificativa com pelo menos 10 caracteres.');
@@ -784,14 +782,244 @@ function ReviewAdmin({ user, onArticleApproved }) {
       setError(updateError.message);
     }
   };
-  const visible = filter === 'todos' ? items : items.filter((article) => article.status === filter);
-  return <main className="container single-page admin-review-page">
-    <section className="page-intro"><p className="eyebrow">Administração</p><h2>Fila de revisão</h2><p>Analise os artigos enviados e decida quais serão aprovados para publicação.</p><div className="admin-toolbar"><label>Status<select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="pendente_revisao">Aguardando revisão</option><option value="aprovado">Aprovados</option><option value="rejeitado">Rejeitados</option><option value="todos">Todos</option></select></label><button className="button button-secondary" onClick={load} disabled={loading}>{loading ? 'Atualizando...' : 'Atualizar fila'}</button></div></section>
-    {error && <p className="form-message" role="alert">{error}</p>}
-    {loading && <section className="admin-review-list"><LoadingState label="Carregando artigos..." /></section>}
-    {!loading && !visible.length && <section className="admin-review-list"><p className="empty-state">Nenhum artigo nesta categoria.</p></section>}
-    {!loading && visible.length > 0 && <section className="admin-review-list">{visible.map((article) => <article className="review-admin-item" key={article.id}><div className="review-admin-content"><div className="review-admin-heading"><span className="tag">{article.category}</span><span className={`review-status status-${article.status}`}>{article.status === 'pendente_revisao' ? 'Em revisão' : article.status === 'aprovado' ? 'Aprovado' : 'Rejeitado'}</span></div><h3>{article.title}</h3><p>{article.excerpt}</p><div className="review-admin-meta"><span>{article.author_name} · {article.author_email}</span><span>{article.created_at ? new Date(article.created_at).toLocaleDateString('pt-BR') : 'Data pendente'}</span></div>{article.cover_image && <img className="review-cover-preview" src={article.cover_image} alt="" />}<details><summary>Ver texto completo</summary><div className="review-text">{Array.isArray(article.content) ? article.content.map((paragraph) => <p key={paragraph}>{paragraph}</p>) : <p>{article.content}</p>}</div></details>{article.review_note && <p className="review-note"><strong>Justificativa:</strong> {article.review_note}</p>}</div>{article.status === 'pendente_revisao' && <div className="review-admin-actions"><button className="button button-primary" onClick={() => updateStatus(article, 'aprovado')}>Aprovar</button><button className="button button-secondary" onClick={() => { setReviewing(article.id); setReviewNote(''); }}>Rejeitar</button></div>}{reviewing === article.id && <div className="review-dialog"><label>Justificativa da rejeição<textarea rows="4" value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Explique ao escritor o que precisa ser ajustado." /></label><div className="profile-actions"><button className="button button-secondary" onClick={() => setReviewing(null)}>Cancelar</button><button className="button button-primary" onClick={() => updateStatus(article, 'rejeitado')}>Confirmar rejeição</button></div></div>}</article>)}</section>}
-  </main>;
+
+  const updateMessageStatus = async (msgId, newStatus) => {
+    try {
+      const token = await getAccessToken();
+      const res = await fetch('/api/admin/messages', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: msgId, status: newStatus })
+      });
+      if (!res.ok) throw new Error('Falha ao atualizar mensagem');
+      setMessages((prev) => prev.map((m) => m.id === msgId ? { ...m, status: newStatus } : m));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const deleteMessage = async (msgId) => {
+    if (!window.confirm('Deseja realmente excluir esta mensagem permanentemente?')) return;
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`/api/admin/messages?id=${encodeURIComponent(msgId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Falha ao excluir mensagem');
+      setMessages((prev) => prev.filter((m) => m.id !== msgId));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const visibleArticles = filter === 'todos' ? items : items.filter((article) => article.status === filter);
+  const visibleMessages = messageFilter === 'todos' ? messages : messages.filter((msg) => msg.status === messageFilter);
+  const pendingArticlesCount = items.filter((i) => i.status === 'pendente_revisao').length;
+  const unreadMessagesCount = messages.filter((m) => m.status === 'unread').length;
+
+  return (
+    <main className="container single-page admin-review-page">
+      <section className="page-intro">
+        <p className="eyebrow">Painel de Controle</p>
+        <h2>Administração Editorial</h2>
+        <p>Gerencie a fila de artigos submetidos e as mensagens enviadas pelos leitores através do formulário de contato.</p>
+
+        {/* Abas de Navegação */}
+        <div className="admin-nav-tabs">
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'articles' ? 'active' : ''}`}
+            onClick={() => setActiveTab('articles')}
+          >
+            <span>📑 Fila de Artigos</span>
+            {pendingArticlesCount > 0 && <span className="tab-badge-pill">{pendingArticlesCount}</span>}
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === 'messages' ? 'active' : ''}`}
+            onClick={() => setActiveTab('messages')}
+          >
+            <span>✉️ Mensagens de Contato</span>
+            {unreadMessagesCount > 0 && <span className="tab-badge-pill unread">{unreadMessagesCount}</span>}
+          </button>
+        </div>
+      </section>
+
+      {error && <p className="form-message" role="alert">{error}</p>}
+
+      {/* ABA 1: ARTIGOS */}
+      {activeTab === 'articles' && (
+        <>
+          <div className="admin-toolbar">
+            <label>
+              Filtrar Status
+              <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+                <option value="pendente_revisao">Aguardando revisão ({pendingArticlesCount})</option>
+                <option value="aprovado">Aprovados</option>
+                <option value="rejeitado">Rejeitados</option>
+                <option value="todos">Todos os artigos ({items.length})</option>
+              </select>
+            </label>
+            <button className="button button-secondary" onClick={load} disabled={loading}>
+              {loading ? 'Atualizando...' : 'Atualizar fila'}
+            </button>
+          </div>
+
+          {loading && <section className="admin-review-list"><LoadingState label="Carregando artigos..." /></section>}
+          {!loading && !visibleArticles.length && (
+            <section className="admin-review-list"><p className="empty-state">Nenhum artigo nesta categoria.</p></section>
+          )}
+          {!loading && visibleArticles.length > 0 && (
+            <section className="admin-review-list">
+              {visibleArticles.map((article) => (
+                <article className="review-admin-item" key={article.id}>
+                  <div className="review-admin-content">
+                    <div className="review-admin-heading">
+                      <span className="tag">{article.category}</span>
+                      <span className={`review-status status-${article.status}`}>
+                        {article.status === 'pendente_revisao' ? 'Em revisão' : article.status === 'aprovado' ? 'Aprovado' : 'Rejeitado'}
+                      </span>
+                    </div>
+                    <h3>{article.title}</h3>
+                    <p>{article.excerpt}</p>
+                    <div className="review-admin-meta">
+                      <span>{article.author_name} · {article.author_email}</span>
+                      <span>{article.created_at ? new Date(article.created_at).toLocaleDateString('pt-BR') : 'Data pendente'}</span>
+                    </div>
+                    {article.cover_image && <img className="review-cover-preview" src={article.cover_image} alt="" />}
+                    <details>
+                      <summary>Ver texto completo</summary>
+                      <div className="review-text">
+                        {Array.isArray(article.content)
+                          ? article.content.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+                          : <p>{article.content}</p>}
+                      </div>
+                    </details>
+                    {article.review_note && (
+                      <p className="review-note"><strong>Justificativa:</strong> {article.review_note}</p>
+                    )}
+                  </div>
+                  {article.status === 'pendente_revisao' && (
+                    <div className="review-admin-actions">
+                      <button className="button button-primary" onClick={() => updateStatus(article, 'aprovado')}>
+                        Aprovar
+                      </button>
+                      <button className="button button-secondary" onClick={() => { setReviewing(article.id); setReviewNote(''); }}>
+                        Rejeitar
+                      </button>
+                    </div>
+                  )}
+                  {reviewing === article.id && (
+                    <div className="review-dialog">
+                      <label>
+                        Justificativa da rejeição
+                        <textarea
+                          rows="4"
+                          value={reviewNote}
+                          onChange={(event) => setReviewNote(event.target.value)}
+                          placeholder="Explique ao escritor o que precisa ser ajustado."
+                        />
+                      </label>
+                      <div className="profile-actions">
+                        <button className="button button-secondary" onClick={() => setReviewing(null)}>
+                          Cancelar
+                        </button>
+                        <button className="button button-primary" onClick={() => updateStatus(article, 'rejeitado')}>
+                          Confirmar rejeição
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </section>
+          )}
+        </>
+      )}
+
+      {/* ABA 2: MENSAGENS DE CONTATO */}
+      {activeTab === 'messages' && (
+        <>
+          <div className="admin-toolbar">
+            <label>
+              Filtrar Mensagens
+              <select value={messageFilter} onChange={(e) => setMessageFilter(e.target.value)}>
+                <option value="todos">Todas as mensagens ({messages.length})</option>
+                <option value="unread">Não lidas ({unreadMessagesCount})</option>
+                <option value="read">Lidas</option>
+              </select>
+            </label>
+            <button className="button button-secondary" onClick={load} disabled={loading}>
+              {loading ? 'Atualizando...' : 'Atualizar mensagens'}
+            </button>
+          </div>
+
+          {loading && <section className="admin-review-list"><LoadingState label="Carregando mensagens..." /></section>}
+          {!loading && !visibleMessages.length && (
+            <section className="admin-review-list">
+              <p className="empty-state">Nenhuma mensagem recebida até o momento.</p>
+            </section>
+          )}
+          {!loading && visibleMessages.length > 0 && (
+            <section className="admin-review-list">
+              {visibleMessages.map((msg) => (
+                <article className={`admin-message-card ${msg.status === 'unread' ? 'is-unread' : ''}`} key={msg.id}>
+                  <div className="msg-card-header">
+                    <div className="msg-author-info">
+                      <strong>{msg.name}</strong>
+                      <span className="msg-email-badge">✉️ {msg.email}</span>
+                      <span className="msg-subject-tag">{msg.subject}</span>
+                    </div>
+                    <div className="msg-date">
+                      {msg.created_at ? new Date(msg.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                    </div>
+                  </div>
+
+                  <div className="msg-body-content">
+                    <p>{msg.message}</p>
+                  </div>
+
+                  <div className="msg-actions-row">
+                    <a
+                      href={`mailto:${msg.email}?subject=${encodeURIComponent(`Re: ${msg.subject} - Histórias Contadas`)}`}
+                      className="button button-primary msg-reply-btn"
+                    >
+                      Responder por E-mail ↗
+                    </a>
+                    {msg.status === 'unread' ? (
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={() => updateMessageStatus(msg.id, 'read')}
+                      >
+                        Marcar como lida
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={() => updateMessageStatus(msg.id, 'unread')}
+                      >
+                        Marcar como não lida
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="save-button danger"
+                      onClick={() => deleteMessage(msg.id)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
+        </>
+      )}
+    </main>
+  );
 }
 
 function SubmitArticle({ user }) {
@@ -1094,8 +1322,237 @@ function Profile({ user, profile, isAdmin = false, onLogout, onVerified, onProfi
 }
 
 function StaticPage({ type }) {
-  if (type === 'sobre') return <main className="container single-page"><section className="about-hero"><div className="author-photo" role="img" aria-label="Foto de Lucas David Carvalho Vieira de Matos" /><div className="author-copy"><p className="eyebrow">Sobre o criador</p><h2>Lucas David Carvalho Vieira de Matos</h2><p>Recém-formado em Ciência da Computação e apaixonado por história desde a escola, Lucas une tecnologia e narrativa para explorar os caminhos que a história não tomou.</p></div></section><section className="about-story"><p>A ideia de dar vida a este blog nasceu de uma vontade muito simples, mas inegavelmente poderosa: unir duas grandes paixões que sempre caminharam lado a lado na minha trajetória. Desde a época da escola, a história sempre foi a disciplina que mais capturava a minha atenção e despertava minha curiosidade. Porém, o que realmente me fascinava nunca foi apenas memorizar datas ou aceitar o curso natural dos eventos, mas sim questionar as infinitas possibilidades do que poderia ter acontecido. Aquele famoso e intrigante "e se?" sempre funcionou como o verdadeiro motor da minha imaginação, transformando fatos consumados em universos inteiros de possibilidades inexploradas.</p><p>Depois de se formar em Ciência da Computação, Lucas criou o <strong>Histórias Contadas de Outra Maneira</strong> para ser um espaço aberto: um lugar onde ele mesmo pudesse escrever, mas também onde outras pessoas pudessem trazer suas próprias versões e hipóteses sobre o passado.</p><p>Espero que gostem e se divirtam tanto quanto eu me divirto pensando nesses outros caminhos que a história poderia ter tomado!</p></section></main>;
-  return <main className="container single-page"><section className="contact-card"><p className="eyebrow">Contato</p><h2>Parcerias, sugestões e mensagens dos leitores</h2><form className="contact-form" onSubmit={(event) => { event.preventDefault(); alert('Mensagem enviada.'); }}><label>Nome<input required name="nome" placeholder="Seu nome" /></label><label>E-mail<input required type="email" name="email" placeholder="Seu e-mail" /></label><label>Mensagem<textarea required name="mensagem" rows="5" placeholder="Escreva sua mensagem" /></label><button className="button button-primary" type="submit">Enviar mensagem</button></form></section></main>;
+  if (type === 'sobre') {
+    return (
+      <main className="container single-page">
+        <section className="about-hero">
+          <div className="author-photo" role="img" aria-label="Foto de Lucas David Carvalho Vieira de Matos" />
+          <div className="author-copy">
+            <p className="eyebrow">Sobre o criador</p>
+            <h2>Lucas David Carvalho Vieira de Matos</h2>
+            <p>Recém-formado em Ciência da Computação e apaixonado por história desde a escola, Lucas une tecnologia e narrativa para explorar os caminhos que a história não tomou.</p>
+          </div>
+        </section>
+        <section className="about-story">
+          <p>A ideia de dar vida a este blog nasceu de uma vontade muito simples, mas inegavelmente poderosa: unir duas grandes paixões que sempre caminharam lado a lado na minha trajetória. Desde a época da escola, a história sempre foi a disciplina que mais capturava a minha atenção e despertava minha curiosidade. Porém, o que realmente me fascinava nunca foi apenas memorizar datas ou aceitar o curso natural dos eventos, mas sim questionar as infinitas possibilidades do que poderia ter acontecido. Aquele famoso e intrigante "e se?" sempre funcionou como o verdadeiro motor da minha imaginação, transformando fatos consumados em universos inteiros de possibilidades inexploradas.</p>
+          <p>Depois de se formar em Ciência da Computação, Lucas criou o <strong>Histórias Contadas de Outra Maneira</strong> para ser um espaço aberto: um lugar onde ele mesmo pudesse escrever, mas também onde outras pessoas pudessem trazer suas próprias versões e hipóteses sobre o passado.</p>
+          <p>Espero que gostem e se divirtam tanto quanto eu me divirto pensando nesses outros caminhos que a história poderia ter tomado!</p>
+        </section>
+      </main>
+    );
+  }
+  return <ContactPage />;
+}
+
+function ContactPage() {
+  const [form, setForm] = useState({
+    nome: '',
+    email: '',
+    assunto: 'Sugestão de Pauta / "E se?"',
+    mensagem: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ type: '', text: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus({ type: '', text: '' });
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.nome,
+          email: form.email,
+          subject: form.assunto,
+          message: form.mensagem
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Não foi possível enviar a mensagem.');
+      }
+
+      setStatus({
+        type: 'success',
+        text: 'Sua mensagem foi enviada com sucesso para a equipe editorial! Responderemos no seu e-mail em até 48 horas úteis.'
+      });
+      setForm({
+        nome: '',
+        email: '',
+        assunto: 'Sugestão de Pauta / "E se?"',
+        mensagem: ''
+      });
+    } catch (err) {
+      setStatus({
+        type: 'error',
+        text: err.message || 'Não foi possível enviar sua mensagem no momento. Tente novamente mais tarde.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="container single-page contact-page-wrapper">
+      <div className="contact-page-header">
+        <p className="eyebrow">Canal Aberto com a Redação</p>
+        <h2>Contato & Parcerias</h2>
+        <p className="contact-header-lead">
+          Tem dúvidas, sugestões de pautas contrafatuais, propostas de parcerias ou quer conversar com o autor? Envie uma mensagem diretamente para nossa equipe.
+        </p>
+      </div>
+
+      <div className="contact-layout-grid">
+        {/* Formulário Principal */}
+        <section className="contact-card contact-form-card">
+          <h3>Envie sua mensagem</h3>
+          <p className="form-intro">Preencha os campos abaixo com seus dados para entrarmos em contato.</p>
+
+          {status.type === 'success' && (
+            <div className="contact-alert success" role="status">
+              <span className="alert-icon">✓</span>
+              <div>
+                <strong>Mensagem entregue com sucesso!</strong>
+                <p>{status.text}</p>
+              </div>
+            </div>
+          )}
+
+          {status.type === 'error' && (
+            <div className="contact-alert error" role="alert">
+              <span className="alert-icon">✕</span>
+              <div>
+                <strong>Falha no envio</strong>
+                <p>{status.text}</p>
+              </div>
+            </div>
+          )}
+
+          <form className="contact-form" onSubmit={handleSubmit}>
+            <div className="form-group-row">
+              <label>
+                Seu Nome Completo *
+                <input
+                  required
+                  name="nome"
+                  value={form.nome}
+                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                  placeholder="Ex: Carlos Eduardo"
+                  minLength="2"
+                  maxLength="100"
+                />
+              </label>
+
+              <label>
+                Seu E-mail *
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="seuemail@exemplo.com"
+                  maxLength="150"
+                />
+              </label>
+            </div>
+
+            <label>
+              Assunto da Mensagem *
+              <select
+                name="assunto"
+                value={form.assunto}
+                onChange={(e) => setForm({ ...form, assunto: e.target.value })}
+              >
+                <option value="Sugestão de Pauta / 'E se?'">Sugestão de Pauta / Teoria "E se?"</option>
+                <option value="Dúvida sobre Submissão de Artigo">Dúvida sobre Submissão de Artigo</option>
+                <option value="Parceria Editorial ou Divulgação">Parceria Editorial ou Divulgação</option>
+                <option value="Canal do YouTube @ALTERNATIVAHISTORIA">Canal do YouTube @ALTERNATIVAHISTORIA</option>
+                <option value="Outros assuntos">Outro assunto</option>
+              </select>
+            </label>
+
+            <label>
+              Mensagem detalhada *
+              <textarea
+                required
+                name="mensagem"
+                rows="6"
+                value={form.mensagem}
+                onChange={(e) => setForm({ ...form, mensagem: e.target.value })}
+                placeholder="Compartilhe suas ideias, dúvidas ou propostas com a nossa equipe..."
+                minLength="10"
+                maxLength="5000"
+              />
+            </label>
+
+            <button
+              className="button button-primary contact-submit-btn"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner-sm" aria-hidden="true" />
+                  <span>Enviando mensagem...</span>
+                </>
+              ) : (
+                <>
+                  <span>Enviar mensagem agora</span>
+                  <span className="btn-arrow" aria-hidden="true">→</span>
+                </>
+              )}
+            </button>
+          </form>
+        </section>
+
+        {/* Painel Lateral com Informações Oficiais */}
+        <aside className="contact-info-panel">
+          {/* Card do Canal do YouTube */}
+          <div className="contact-info-card youtube-highlight-card">
+            <div className="info-card-badge">🎬 Canal Oficial</div>
+            <h4>Alternativa História</h4>
+            <p>
+              Tem uma sugestão de roteiro para o canal? Nossos vídeos no YouTube nascem das hipóteses enviadas pelos leitores e escritores.
+            </p>
+            <a
+              href="https://www.youtube.com/@ALTERNATIVAHISTORIA"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button button-youtube-sm"
+            >
+              Conhecer @ALTERNATIVAHISTORIA ↗
+            </a>
+          </div>
+
+          {/* Card de Prazo & Atendimento */}
+          <div className="contact-info-card">
+            <div className="info-card-badge">⏱ Atendimento</div>
+            <h4>Tempo de Resposta</h4>
+            <p>
+              Nossa equipe editorial lê e responde todas as mensagens recebidas. Nosso prazo padrão de retorno é de <strong>24h a 48h úteis</strong>.
+            </p>
+          </div>
+
+          {/* Card de Submissão de Artigo */}
+          <div className="contact-info-card">
+            <div className="info-card-badge">✍️ É Escritor?</div>
+            <h4>Quer publicar um artigo?</h4>
+            <p>
+              Você não precisa usar o formulário de contato! Crie uma conta de escritor para submeter seu texto para curadoria editorial.
+            </p>
+            <a href="/cadastro" className="sidebar-author-btn">
+              Inscrever-se como escritor →
+            </a>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
 }
 
 function NotFound() {
@@ -1196,7 +1653,7 @@ function App() {
   if (path.startsWith('/categoria/')) content = <Category slug={path.split('/')[2]} articles={allArticles} />;
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={allArticles} user={user} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
-  else if (path === '/contato') content = <StaticPage type="contato" />;
+  else if (path === '/contato') content = <ContactPage />;
   else if (path === '/login') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage />;
   else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage mode="register" />;
   else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage registrationSuccess={registrationSuccess} />;

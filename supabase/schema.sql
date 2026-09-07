@@ -63,3 +63,25 @@ create policy "Users can update their own articles"
   on public.articles for update
   using (auth.uid() = author_uid)
   with check (auth.uid() = author_uid);
+
+-- Tabela de mensagens de contato dos leitores
+create table if not exists public.contact_messages (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  subject text not null default 'Mensagem do leitor',
+  message text not null,
+  status text not null default 'unread' check (status in ('unread', 'read', 'archived')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists contact_messages_status_idx on public.contact_messages(status);
+create index if not exists contact_messages_created_at_idx on public.contact_messages(created_at desc);
+
+alter table public.contact_messages enable row level security;
+
+-- Inserção pública permitida (visitantes do site podem enviar mensagens)
+create policy "Anyone can insert contact messages"
+  on public.contact_messages for insert
+  with check (true);
+
