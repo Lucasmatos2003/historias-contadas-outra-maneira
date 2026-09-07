@@ -131,7 +131,8 @@ function Layout({ children, articles, user, profile, isAdmin, onLogout }) {
         <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
           <a href="/" onClick={link('/')}>Home</a>
           <a href="/categoria/historia-alternativa" onClick={link('/categoria/historia-alternativa')}>História Alternativa</a>
-          <a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades Geradas</a>
+          <a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades Históricas</a>
+          <a href="/categoria/geopolitica-ficticia" onClick={link('/categoria/geopolitica-ficticia')}>Geopolítica Fictícia</a>
           <a href="/sobre" onClick={link('/sobre')}>Sobre</a>
           <a href="/contato" onClick={link('/contato')}>Contato</a>
           {user && <a className="nav-badge-submit" href="/submeter" onClick={link('/submeter')}>+ Artigo</a>}
@@ -153,10 +154,26 @@ function Layout({ children, articles, user, profile, isAdmin, onLogout }) {
             <div><p className="eyebrow">Revista digital</p><strong>Histórias Contadas<br />de Outra Maneira</strong></div>
           </div>
           <p className="footer-description">Ideias, hipóteses e histórias que atravessam os caminhos conhecidos.</p>
-          <div className="footer-column"><span className="footer-title">Explorar</span><a href="/" onClick={link('/')}>Início</a><a href="/categoria/historia-alternativa" onClick={link('/categoria/historia-alternativa')}>História alternativa</a><a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades</a></div>
-          <div className="footer-column"><span className="footer-title">Revista</span><a href="/sobre" onClick={link('/sobre')}>Sobre o autor</a><a href="/contato" onClick={link('/contato')}>Contato</a><a href={user ? '/submeter' : '/cadastro'} onClick={link(user ? '/submeter' : '/cadastro')}>Escreva conosco</a><a href="https://www.youtube.com/@ALTERNATIVAHISTORIA" target="_blank" rel="noopener noreferrer">Canal YouTube ↗</a></div>
+          <div className="footer-column">
+            <span className="footer-title">Categorias</span>
+            <a href="/" onClick={link('/')}>Início</a>
+            <a href="/categoria/historia-alternativa" onClick={link('/categoria/historia-alternativa')}>História Alternativa</a>
+            <a href="/categoria/curiosidades-geradas" onClick={link('/categoria/curiosidades-geradas')}>Curiosidades Históricas</a>
+            <a href="/categoria/geopolitica-ficticia" onClick={link('/categoria/geopolitica-ficticia')}>Geopolítica Fictícia</a>
+          </div>
+          <div className="footer-column">
+            <span className="footer-title">Institucional</span>
+            <a href="/sobre" onClick={link('/sobre')}>Sobre o autor</a>
+            <a href="/contato" onClick={link('/contato')}>Contato</a>
+            <a href="/politica-de-privacidade" onClick={link('/politica-de-privacidade')}>Política de Privacidade</a>
+            <a href={user ? '/submeter' : '/cadastro'} onClick={link(user ? '/submeter' : '/cadastro')}>Escreva conosco</a>
+            <a href="https://www.youtube.com/@ALTERNATIVAHISTORIA" target="_blank" rel="noopener noreferrer">Canal YouTube ↗</a>
+          </div>
         </div>
-        <div className="footer-bottom"><span>© {new Date().getFullYear()} Histórias Contadas de Outra Maneira</span><span>Feito para quem gosta de imaginar outros caminhos.</span></div>
+        <div className="footer-bottom">
+          <span>© {new Date().getFullYear()} Histórias Contadas de Outra Maneira</span>
+          <span>Feito para quem gosta de imaginar outros caminhos · LGPD & Privacidade</span>
+        </div>
       </footer>
       {searchOpen && <div className="search-overlay is-open" onClick={(event) => event.target === event.currentTarget && setSearchOpen(false)}>
         <div className="search-dialog" role="dialog" aria-modal="true">
@@ -231,6 +248,41 @@ function Home({ articles, user }) {
   return (
     <main className="container home-layout">
       <div className="content-column">
+        {/* BANNER MANIFESTO DE PROPOSTA DE VALOR & CONVERSÃO */}
+        <section className="magazine-manifesto-card">
+          <div className="manifesto-badge">
+            <span className="sparkle-symbol">✦</span> Revista de História Alternativa & Curiosidades
+          </div>
+          <h1 className="manifesto-title">
+            E se os rumos da história tivessem sido diferentes?
+          </h1>
+          <p className="manifesto-desc">
+            Exploramos hipóteses contrafactuais bem fundamentadas, enigmas arqueológicos esquecidos e geopolítica ficcional para quem gosta de imaginar outros caminhos para a humanidade.
+          </p>
+          <div className="manifesto-actions">
+            <a
+              href="#feed-artigos"
+              className="button button-primary manifesto-btn-read"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('feed-artigos')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <span>📖 Ler artigos</span>
+            </a>
+            <a
+              href={user ? '/submeter' : '/cadastro'}
+              className="button button-secondary manifesto-btn-write"
+              onClick={(e) => {
+                e.preventDefault();
+                go(user ? '/submeter' : '/cadastro');
+              }}
+            >
+              <span>✍️ Enviar meu artigo</span>
+            </a>
+          </div>
+        </section>
+
         {/* HERO EDITORIAL REDESIGN */}
         <section className="hero-article-modern">
           <div className="hero-copy-modern">
@@ -300,7 +352,7 @@ function Home({ articles, user }) {
         </section>
 
         {/* FEED DE HISTÓRIAS */}
-        <section className="feed-section">
+        <section className="feed-section" id="feed-artigos">
           <div className="section-head">
             <div>
               <p className="eyebrow">Edição corrente</p>
@@ -677,10 +729,13 @@ function Category({ slug, articles }) {
 function formatSupabaseArticle(row) {
   const categoryNames = {
     'historia-alternativa': 'História Alternativa',
-    'curiosidades-geradas': 'Curiosidades Geradas'
+    'curiosidades-geradas': 'Curiosidades Históricas',
+    'geopolitica-ficticia': 'Geopolítica Fictícia'
   };
   const category = categoryNames[row.category] || row.category || 'História Alternativa';
-  const categorySlug = row.category === 'curiosidades-geradas' ? 'curiosidades-geradas' : 'historia-alternativa';
+  const categorySlug = row.category === 'curiosidades-geradas'
+    ? 'curiosidades-geradas'
+    : (row.category === 'geopolitica-ficticia' ? 'geopolitica-ficticia' : 'historia-alternativa');
   const words = (row.content || '').split(/\s+/).length;
   const readingTime = `${Math.max(1, Math.round(words / 160))} min`;
   const date = row.created_at
@@ -728,17 +783,68 @@ function formatSupabaseArticle(row) {
 function Article({ slug, articles, user }) {
   const article = articles.find((item) => item.slug === slug || item.id === slug || item.slugBase === slug);
   if (!article) return <NotFound />;
-  useEffect(() => { document.title = `${article.title} | Histórias Contadas de Outra Maneira`; }, [article]);
+  const go = useNavigation();
+
+  useEffect(() => {
+    document.title = `${article.title} | Histórias Contadas de Outra Maneira`;
+    let descMeta = document.querySelector('meta[name="description"]');
+    if (!descMeta) {
+      descMeta = document.createElement('meta');
+      descMeta.setAttribute('name', 'description');
+      document.head.appendChild(descMeta);
+    }
+    descMeta.setAttribute('content', article.excerpt || article.title);
+
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', article.title);
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+      ogDesc = document.createElement('meta');
+      ogDesc.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDesc);
+    }
+    ogDesc.setAttribute('content', article.excerpt || article.title);
+
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (!ogImage) {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      document.head.appendChild(ogImage);
+    }
+    ogImage.setAttribute('content', article.image || article.cover_image || '');
+
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [article]);
+
   const paragraphs = (Array.isArray(article.content) ? article.content : String(article.content).split('\n')).filter(Boolean);
   const midPoint = Math.max(1, Math.floor(paragraphs.length / 2));
   const firstHalf = paragraphs.slice(0, midPoint);
   const secondHalf = paragraphs.slice(midPoint);
 
+  const isFact = article.editorialType === 'fato' || article.categorySlug === 'curiosidades-geradas';
+  const isGeo = article.editorialType === 'geopolitica' || article.categorySlug === 'geopolitica-ficticia';
+  const natureBadge = isFact ? '📜 Fato Histórico Documentado' : (isGeo ? '🌐 Simulação Geopolítica' : '⏳ Hipótese Especulativa');
+  const natureBadgeClass = isFact ? 'nature-fact' : (isGeo ? 'nature-geo' : 'nature-spec');
+
+  const related = articles
+    .filter((item) => item.slug !== article.slug && (item.categorySlug === article.categorySlug || item.category === article.category))
+    .slice(0, 2);
+  const fallbackRelated = related.length ? related : articles.filter((item) => item.slug !== article.slug).slice(0, 2);
+
   return (
     <main className="container article-layout">
       <article className="article-content-panel">
         <div className="article-header">
-          <p className="eyebrow">{article.category}</p>
+          <div className="article-category-row">
+            <span className="eyebrow">{article.category}</span>
+            <span className={`editorial-nature-tag ${natureBadgeClass}`}>{natureBadge}</span>
+          </div>
           <h2>{article.title}</h2>
           <div className="meta-row">
             <span>Por {article.author}</span>
@@ -757,6 +863,62 @@ function Article({ slug, articles, user }) {
             </figure>
           )}
           {secondHalf.map((paragraph, idx) => <p key={idx + midPoint}>{paragraph}</p>)}
+
+          {/* QUADRO DE FONTES & REFERÊNCIAS HISTÓRICAS */}
+          {article.sources && article.sources.length > 0 && (
+            <div className="article-sources-box">
+              <div className="sources-title-row">
+                <span className="sources-icon">📚</span>
+                <h4>Fontes & Referências Históricas</h4>
+              </div>
+              <p className="sources-lead">Documentação, cronistas antigos e obras historiográficas de base:</p>
+              <ul className="sources-list">
+                {article.sources.map((src, i) => <li key={i}>{src}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {/* AVISO EDITORIAL / TRANSPARÊNCIA */}
+          <div className="editorial-disclaimer-box">
+            <div className="disclaimer-header">
+              <span className="disclaimer-icon">✦</span>
+              <strong>Transparência Editorial</strong>
+            </div>
+            <p>
+              {article.disclaimer || (isFact
+                ? 'Este artigo aborda eventos, artefatos ou relatos preservados em museus e registros arqueológicos comprovados.'
+                : 'Esta obra é um exercício de história alternativa fundamentado em premissas e eventos reais, explorando caminhos não trilhados pela narrativa convencional.')}
+            </p>
+          </div>
+
+          {/* HISTÓRIAS RELACIONADAS / RETENÇÃO */}
+          <div className="related-articles-section">
+            <div className="related-head">
+              <p className="eyebrow">Continue explorando</p>
+              <h3>Histórias Relacionadas</h3>
+            </div>
+            <div className="related-cards-grid">
+              {fallbackRelated.map((rel) => (
+                <div
+                  key={rel.slug}
+                  className="related-card"
+                  onClick={() => {
+                    go(`/artigo/${rel.slug}`);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <img src={rel.image || rel.cover_image} alt={rel.title} className="related-card-thumb" />
+                  <div className="related-card-content">
+                    <span className="related-cat">{rel.category}</span>
+                    <h5>{rel.title}</h5>
+                    <small>{rel.readingTime} de leitura</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </article>
       <Sidebar user={user} />
@@ -2133,6 +2295,63 @@ function ContactPage() {
   );
 }
 
+function PrivacyPolicyPage() {
+  const go = useNavigation();
+  useEffect(() => {
+    document.title = 'Política de Privacidade | Histórias Contadas de Outra Maneira';
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  return (
+    <main className="container single-page">
+      <article className="contact-card legal-document">
+        <p className="eyebrow">Transparência e Conformidade</p>
+        <h2>Política de Privacidade</h2>
+        <p className="legal-updated">Última atualização: Setembro de 2026</p>
+
+        <section className="legal-section">
+          <h3>1. Introdução e Compromisso</h3>
+          <p>A revista digital <strong>Histórias Contadas de Outra Maneira</strong> tem o compromisso de proteger a privacidade, a segurança e a transparência no tratamento dos dados pessoais de seus leitores, colaboradores e escritores, em estrita conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong> e demais legislações aplicáveis.</p>
+        </section>
+
+        <section className="legal-section">
+          <h3>2. Coleta de Informações</h3>
+          <p>Coletamos informações nas seguintes circunstâncias:</p>
+          <ul>
+            <li><strong>Navegação geral:</strong> Dados anônimos de acesso (endereço IP resumido, tipo de navegador, páginas visualizadas e tempo de permanência) para aprimoramento da experiência editorial.</li>
+            <li><strong>Cadastro de Escritores e Submissão:</strong> Nome público de autor, endereço de e-mail e biografia fornecidos voluntariamente para criação de conta e revisão de textos.</li>
+            <li><strong>Mensagens de Contato:</strong> Nome, e-mail e conteúdo enviados espontaneamente através do formulário de contato da revista.</li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h3>3. Uso de Cookies e Google AdSense</h3>
+          <p>Este site utiliza cookies para personalizar conteúdo, anúncios e analisar nosso tráfego:</p>
+          <ul>
+            <li><strong>Google AdSense:</strong> O Google, como fornecedor terceiro, utiliza cookies (incluindo o cookie DoubleClick DART) para veicular anúncios com base nas visitas anteriores dos usuários a este ou a outros sites na internet.</li>
+            <li><strong>Desativação de Anúncios Personalizados:</strong> Os leitores podem desativar a publicidade personalizada acessando as <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Configurações de Anúncios do Google</a> ou visitando o portal <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer">AboutAds.info</a>.</li>
+            <li><strong>Google Analytics:</strong> Utilizamos o Google Analytics (código de acompanhamento G-WS5640B9BV) para compreender de maneira agregada como o público interage com nossos artigos.</li>
+          </ul>
+        </section>
+
+        <section className="legal-section">
+          <h3>4. Direitos do Titular (LGPD)</h3>
+          <p>Em conformidade com a LGPD, todo usuário possui o direito de solicitar a qualquer momento a confirmação da existência de tratamento de dados, acesso aos seus dados pessoais, correção de dados incompletos ou inexatos, ou a exclusão definitiva de sua conta de escritor.</p>
+        </section>
+
+        <section className="legal-section">
+          <h3>5. Contato sobre Privacidade</h3>
+          <p>Para dúvidas, solicitações ou exercício de direitos referentes aos seus dados pessoais, entre em contato através da nossa página de <a href="/contato" onClick={(e) => { e.preventDefault(); go('/contato'); }}>Contato</a> ou pelo e-mail da equipe editorial.</p>
+        </section>
+
+        <div className="legal-actions">
+          <a className="button button-secondary" href="/" onClick={(e) => { e.preventDefault(); go('/'); }}>Voltar para a Home</a>
+        </div>
+      </article>
+    </main>
+  );
+}
+
 function NotFound() {
   const go = useNavigation();
   return <main className="container single-page"><section className="contact-card not-found-page"><p className="eyebrow">Erro 404</p><h2>Página não encontrada</h2><p>Esse caminho não existe ou foi movido. Volte para a página inicial e continue explorando.</p><button className="button button-primary" onClick={() => go('/')}>Voltar para a Home</button></section></main>;
@@ -2232,13 +2451,14 @@ function App() {
   else if (path.startsWith('/artigo/')) content = <Article slug={path.split('/')[2]} articles={allArticles} user={user} />;
   else if (path === '/sobre') content = <StaticPage type="sobre" />;
   else if (path === '/contato') content = <ContactPage />;
+  else if (path === '/politica-de-privacidade' || path === '/privacidade') content = <PrivacyPolicyPage />;
   else if (path === '/login') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage />;
   else if (path === '/cadastro') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage mode="register" />;
   else if (path === '/perfil') content = user ? <Profile user={user} profile={profile} isAdmin={isAdmin} registrationSuccess={registrationSuccess} onVerified={refreshUser} onProfileUpdated={updateProfileState} onLogout={() => supabase.auth.signOut()} /> : <AuthPage registrationSuccess={registrationSuccess} />;
   else if (path === '/submeter') content = user ? (isEmailVerified ? <SubmitArticle user={user} /> : <Profile user={user} profile={profile} isAdmin={isAdmin} onVerified={refreshUser} onProfileUpdated={() => refresh((value) => value + 1)} onLogout={() => supabase.auth.signOut()} />) : <AuthPage />;
   else if (path === '/admin') content = user ? <ReviewAdmin user={user} onArticleApproved={loadArticles} /> : <AuthPage />;
   else if (path.startsWith('/escritor/')) content = <PublicWriter uid={path.split('/')[2]} />;
-  else if (!['/', '/login', '/cadastro', '/perfil', '/submeter', '/admin'].includes(path)) content = <NotFound />;
+  else if (!['/', '/login', '/cadastro', '/perfil', '/submeter', '/admin', '/politica-de-privacidade', '/privacidade'].includes(path)) content = <NotFound />;
   return <Layout articles={allArticles} user={user} profile={profile} isAdmin={isAdmin} onLogout={() => supabase.auth.signOut()}>{content}</Layout>;
 }
 
