@@ -7,15 +7,128 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-WS5640B9BV');
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contato | Histórias Contadas de Outra Maneira</title>
+    <meta name="description" content="Entre em contato com a equipe de Histórias Contadas de Outra Maneira. Parcerias, sugestões ou dúvidas — respondemos em até 48 horas." />
     <link rel="stylesheet" href="assets/css/style.css" />
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6561836283460312"
      crossorigin="anonymous"></script>
+    <style>
+      .contact-info-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .contact-info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #1a1a2e;
+        border: 1px solid #2a2a3a;
+        border-radius: 10px;
+        padding: 14px 20px;
+        flex: 1;
+        min-width: 220px;
+      }
+      .contact-info-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+      .contact-info-label {
+        font-size: 11px;
+        color: #7c3aed;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0 0 2px;
+      }
+      .contact-info-value {
+        font-size: 14px;
+        color: #e5e7eb;
+        margin: 0;
+      }
+      .contact-info-value a {
+        color: #a78bfa;
+        text-decoration: none;
+      }
+      .contact-info-value a:hover {
+        text-decoration: underline;
+      }
+      .form-field-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 600px) {
+        .form-field-group { grid-template-columns: 1fr; }
+      }
+      .contact-form label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .contact-form input,
+      .contact-form textarea,
+      .contact-form select {
+        background: #1a1a2e;
+        border: 1px solid #2a2a3a;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #e5e7eb;
+        font-size: 15px;
+        font-family: inherit;
+        transition: border-color 0.2s;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .contact-form input:focus,
+      .contact-form textarea:focus,
+      .contact-form select:focus {
+        outline: none;
+        border-color: #7c3aed;
+      }
+      .contact-form textarea { resize: vertical; min-height: 140px; }
+      #contact-feedback {
+        display: none;
+        padding: 14px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 16px;
+      }
+      #contact-feedback.success {
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+        color: #4ade80;
+      }
+      #contact-feedback.error {
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        color: #f87171;
+      }
+      .btn-submit-contact {
+        min-width: 180px;
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn-submit-contact:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .contact-card { max-width: 740px; margin: 0 auto; }
+    </style>
   </head>
   <body>
     <div class="page-shell">
@@ -28,44 +141,146 @@
           </div>
         </div>
         <nav class="main-nav" aria-label="Navegação principal">
-          <a href="index.html">Home</a>
-          <a href="categoria-historia-alternativa.html">História Alternativa</a>
-          <a href="categoria-curiosidades-geradas.html">Curiosidades Geradas</a>
-          <a href="sobre.html">Sobre</a>
-          <a href="contato.html" class="active">Contato</a>
+          <a href="/">Home</a>
+          <a href="/categoria/historia-alternativa">História Alternativa</a>
+          <a href="/categoria/curiosidades-geradas">Curiosidades Históricas</a>
+          <a href="/sobre">Sobre</a>
+          <a href="/contato" class="active">Contato</a>
         </nav>
       </header>
 
       <main class="container single-page contact-page">
         <section class="contact-card">
-          <div>
-            <p class="eyebrow">Contato</p>
-            <h2>Parcerias, sugestões e mensagens dos leitores</h2>
+          <div style="margin-bottom: 28px;">
+            <p class="eyebrow">Fale conosco</p>
+            <h2 style="font-size: 28px; margin: 8px 0 12px;">Parcerias, sugestões e mensagens dos leitores</h2>
+            <p style="color: #9ca3af; font-size: 15px; margin: 0;">Respondemos todas as mensagens em até <strong>48 horas</strong>. Se preferir, envie diretamente para o nosso e-mail.</p>
           </div>
 
-          <form class="contact-form">
-            <label>
-              Nome
-              <input type="text" name="nome" placeholder="Seu nome" />
+          <!-- Informações de contato direto -->
+          <div class="contact-info-bar">
+            <div class="contact-info-item">
+              <div class="contact-info-icon">📧</div>
+              <div>
+                <p class="contact-info-label">E-mail</p>
+                <p class="contact-info-value"><a href="mailto:contato@historiasdeoutramaneira.com.br">contato@historiasdeoutramaneira.com.br</a></p>
+              </div>
+            </div>
+            <div class="contact-info-item">
+              <div class="contact-info-icon">🎬</div>
+              <div>
+                <p class="contact-info-label">Canal no YouTube</p>
+                <p class="contact-info-value"><a href="https://www.youtube.com/@ALTERNATIVAHISTORIA" target="_blank" rel="noopener">@ALTERNATIVAHISTORIA</a></p>
+              </div>
+            </div>
+            <div class="contact-info-item">
+              <div class="contact-info-icon">⏱️</div>
+              <div>
+                <p class="contact-info-label">Tempo de resposta</p>
+                <p class="contact-info-value">Até 48 horas úteis</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulário de contato -->
+          <form class="contact-form" id="contactForm" novalidate>
+            <div class="form-field-group">
+              <label for="contact-name">
+                Nome *
+                <input type="text" id="contact-name" name="name" placeholder="Seu nome completo" required minlength="2" maxlength="100" />
+              </label>
+              <label for="contact-email">
+                E-mail *
+                <input type="email" id="contact-email" name="email" placeholder="seu@email.com" required />
+              </label>
+            </div>
+            <label for="contact-subject" style="margin-top: 16px;">
+              Assunto
+              <select id="contact-subject" name="subject">
+                <option value="Mensagem do leitor">💬 Mensagem do leitor</option>
+                <option value="Sugestão de pauta">💡 Sugestão de pauta</option>
+                <option value="Proposta de parceria">🤝 Proposta de parceria</option>
+                <option value="Dúvida sobre submissão">✍️ Dúvida sobre submissão de artigo</option>
+                <option value="Reportar problema">🐛 Reportar problema no site</option>
+                <option value="Outro">📌 Outro</option>
+              </select>
             </label>
-            <label>
-              E-mail
-              <input type="email" name="email" placeholder="Seu e-mail" />
+            <label for="contact-message" style="margin-top: 16px;">
+              Mensagem *
+              <textarea id="contact-message" name="message" rows="6" placeholder="Escreva sua mensagem aqui..." required minlength="10" maxlength="5000"></textarea>
             </label>
-            <label>
-              Mensagem
-              <textarea name="mensagem" rows="5" placeholder="Escreva sua mensagem"></textarea>
-            </label>
-            <button type="submit" class="button button-primary">Enviar mensagem</button>
+            <div style="margin-top: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <button type="submit" id="contactSubmitBtn" class="button button-primary btn-submit-contact">
+                <span id="contactBtnText">✉️ Enviar mensagem</span>
+              </button>
+              <p style="font-size: 12px; color: #6b7280; margin: 0;">* Campos obrigatórios. Seus dados são tratados conforme nossa <a href="/politica-de-privacidade" style="color: #7c3aed;">Política de Privacidade</a>.</p>
+            </div>
+            <div id="contact-feedback" role="alert" aria-live="polite"></div>
           </form>
         </section>
       </main>
 
       <footer class="site-footer">
         <p>© <span id="year"></span> Histórias Contadas de Outra Maneira</p>
+        <nav style="margin-top: 8px; font-size: 12px;">
+          <a href="/politica-de-privacidade" style="color: #7c3aed;">Política de Privacidade</a>
+          &nbsp;·&nbsp;
+          <a href="mailto:contato@historiasdeoutramaneira.com.br" style="color: #7c3aed;">contato@historiasdeoutramaneira.com.br</a>
+        </nav>
       </footer>
     </div>
 
     <script src="assets/js/main.js"></script>
+    <script>
+      (function () {
+        const form = document.getElementById('contactForm');
+        const btn = document.getElementById('contactSubmitBtn');
+        const btnText = document.getElementById('contactBtnText');
+        const feedback = document.getElementById('contact-feedback');
+
+        function showFeedback(message, type) {
+          feedback.textContent = message;
+          feedback.className = type;
+          feedback.style.display = 'block';
+          feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        form.addEventListener('submit', async function (event) {
+          event.preventDefault();
+          feedback.style.display = 'none';
+
+          const name = document.getElementById('contact-name').value.trim();
+          const email = document.getElementById('contact-email').value.trim();
+          const subject = document.getElementById('contact-subject').value;
+          const message = document.getElementById('contact-message').value.trim();
+
+          if (name.length < 2) return showFeedback('Por favor, informe seu nome (mínimo 2 caracteres).', 'error');
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return showFeedback('Por favor, informe um e-mail válido.', 'error');
+          if (message.length < 10) return showFeedback('A mensagem deve ter pelo menos 10 caracteres.', 'error');
+
+          btn.disabled = true;
+          btnText.textContent = '⏳ Enviando...';
+
+          try {
+            const res = await fetch('/api/contact', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name, email, subject, message })
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Erro desconhecido.');
+
+            showFeedback('✅ ' + (data.message || 'Mensagem enviada com sucesso! Você receberá uma confirmação no seu e-mail em breve.'), 'success');
+            form.reset();
+          } catch (err) {
+            showFeedback('❌ ' + (err.message || 'Não foi possível enviar a mensagem. Tente novamente ou escreva para contato@historiasdeoutramaneira.com.br'), 'error');
+          } finally {
+            btn.disabled = false;
+            btnText.textContent = '✉️ Enviar mensagem';
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

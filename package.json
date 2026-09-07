@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
+    "nodemailer": "^10.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

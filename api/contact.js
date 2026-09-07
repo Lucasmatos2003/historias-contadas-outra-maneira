@@ -1,4 +1,5 @@
 import { publicError, rateLimit, RequestError, supabaseAdmin } from './_lib/server.js';
+import { sendMail, emailTemplate, CONTACT_EMAIL } from './_lib/mailer.js';
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
@@ -41,6 +42,48 @@ export default async function handler(request, response) {
       console.error('Contact insert error in Supabase:', insertError.message);
       console.log('Mensagem de contato recebida (backup log):', { name, email, subject, message });
     }
+
+    // Notificação interna para o administrador do site
+    const adminHtml = emailTemplate({
+      title: `Nova mensagem de contato: ${subject}`,
+      preheader: `${name} (${email}) enviou uma mensagem pelo formulário de contato.`,
+      body: `
+        <h1>📬 Nova Mensagem de Contato</h1>
+        <p>Uma nova mensagem foi recebida pelo formulário de contato do site.</p>
+        <div class="data-box">
+          <div class="data-row"><span class="data-label">Nome:</span> <span class="data-value">${name}</span></div>
+          <div class="data-row"><span class="data-label">E-mail:</span> <span class="data-value">${email}</span></div>
+          <div class="data-row"><span class="data-label">Assunto:</span> <span class="data-value">${subject.slice(0, 150)}</span></div>
+        </div>
+        <div class="data-box">
+          <p style="margin:0; color:#e5e7eb; white-space: pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+        </div>
+        <p>Para responder, basta responder este e-mail diretamente — o reply-to está configurado para o remetente.</p>
+      `
+    });
+
+    // Confirmação automática para o leitor
+    const readerHtml = emailTemplate({
+      title: 'Recebemos sua mensagem — Histórias Contadas de Outra Maneira',
+      preheader: 'Obrigado por entrar em contato! Responderemos em breve.',
+      body: `
+        <h1>Mensagem recebida! ✅</h1>
+        <p>Olá, <strong>${name}</strong>! Obrigado por entrar em contato com a equipe de <strong>Histórias Contadas de Outra Maneira</strong>.</p>
+        <p>Recebemos sua mensagem e entraremos em contato em até <strong>48 horas</strong> pelo e-mail <strong>${email}</strong>.</p>
+        <div class="data-box">
+          <div class="data-row"><span class="data-label">Assunto:</span> <span class="data-value">${subject.slice(0, 150)}</span></div>
+        </div>
+        <div class="divider"></div>
+        <p style="font-size:13px; color:#6b7280;">Se você não enviou esta mensagem, pode ignorar este e-mail com segurança.</p>
+        <p style="font-size:13px; color:#6b7280;">Em caso de dúvidas, fale conosco diretamente em <a href="mailto:${CONTACT_EMAIL}" style="color:#7c3aed">${CONTACT_EMAIL}</a>.</p>
+      `
+    });
+
+    // Enviamos ambos os e-mails em paralelo, sem bloquear a resposta em caso de falha
+    await Promise.allSettled([
+      sendMail({ to: CONTACT_EMAIL, subject: `[Contato] ${subject.slice(0, 100)}`, html: adminHtml, replyTo: email }),
+      sendMail({ to: email, subject: 'Recebemos sua mensagem — Histórias Contadas de Outra Maneira', html: readerHtml })
+    ]);
 
     return response.status(200).json({
       ok: true,
