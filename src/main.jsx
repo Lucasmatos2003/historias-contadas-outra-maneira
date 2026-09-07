@@ -330,40 +330,61 @@ function Home({ articles, user }) {
           </div>
 
           <div className="curiosity-cards-grid">
-            <div className="curiosity-feature-card">
-              <div className="curiosity-card-top">
-                <span className="curiosity-icon-badge">🏛️</span>
-                <span className="curiosity-number">01</span>
-              </div>
-              <span className="curiosity-category-tag">Roma & Cartago</span>
-              <h4>A vitória cartaginesa que quase desfez Roma</h4>
-              <p>
-                Após Canas, Aníbal esteve a um cerco de mudar toda a história do Mediterrâneo ocidental e do direito moderno que herdamos.
-              </p>
-            </div>
-
-            <div className="curiosity-feature-card">
+            <div
+              className="curiosity-feature-card clickable-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => go('/artigo/objetos-estranhos-mundo-antigo')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go('/artigo/objetos-estranhos-mundo-antigo'); } }}
+            >
               <div className="curiosity-card-top">
                 <span className="curiosity-icon-badge">⚙️</span>
-                <span className="curiosity-number">02</span>
+                <span className="curiosity-number">01</span>
               </div>
-              <span className="curiosity-category-tag">Grécia Helenística</span>
-              <h4>O computador analógico perdido de Anticítera</h4>
+              <span className="curiosity-category-tag">Arqueologia Mecânica</span>
+              <h4>O computador de bronze grego de 2.100 anos</h4>
               <p>
-                Engrenagens de bronze do século II a.C. calculavam eclipses e movimentos planetários séculos antes da revolução mecânica europeia.
+                Resgatado dos destroços no mar Egeu, o Mecanismo de Anticítera previa eclipses com precisão de minutos e simulava órbitas planetárias com 30 engrenagens de bronze — séculos antes da relojoaria moderna.
               </p>
+              <span className="curiosity-read-more">Ler curiosidade completa →</span>
             </div>
 
-            <div className="curiosity-feature-card">
+            <div
+              className="curiosity-feature-card clickable-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => go('/artigo/reino-diario-secreto')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go('/artigo/reino-diario-secreto'); } }}
+            >
               <div className="curiosity-card-top">
-                <span className="curiosity-icon-badge">🗺️</span>
+                <span className="curiosity-icon-badge">📜</span>
+                <span className="curiosity-number">02</span>
+              </div>
+              <span className="curiosity-category-tag">Arquivos Secretos</span>
+              <h4>O manuscrito proibido que desmanchou um império</h4>
+              <p>
+                Cronista oficial de Justiniano, Procópio escreveu de dia louvores à corte bizantina e à noite, em segredo, a devastadora "História Secreta" — que permaneceu oculta nos arquivos vaticanos por mil anos.
+              </p>
+              <span className="curiosity-read-more">Ler curiosidade completa →</span>
+            </div>
+
+            <div
+              className="curiosity-feature-card clickable-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => go('/artigo/cidades-abandonadas')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go('/artigo/cidades-abandonadas'); } }}
+            >
+              <div className="curiosity-card-top">
+                <span className="curiosity-icon-badge">🏛️</span>
                 <span className="curiosity-number">03</span>
               </div>
-              <span className="curiosity-category-tag">Navegações</span>
-              <h4>Mapas deliberadamente desenhados para naufragar</h4>
+              <span className="curiosity-category-tag">Metrópoles Ocultas</span>
+              <h4>A colmeia subterrânea para 20.000 almas na Capadócia</h4>
               <p>
-                Durante a corrida marítima renascentista, coroas desenhavam ilhas fantasmas e recifes fictícios em cópias de cartas náuticas para fazer espiões rivais naufragarem em alto-mar.
+                Escavada a mais de 85 metros sob o solo da Turquia em 18 níveis interligados, Derinkuyu continha dutos de ar puro, escolas, prensas e portas monolíticas de meia tonelada que só trancavam por dentro.
               </p>
+              <span className="curiosity-read-more">Ler curiosidade completa →</span>
             </div>
           </div>
         </section>

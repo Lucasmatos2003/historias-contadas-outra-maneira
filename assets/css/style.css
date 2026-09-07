@@ -683,6 +683,9 @@ h1, h2, h3, h4 {
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   overflow: hidden;
 }
+.curiosity-feature-card.clickable-card {
+  cursor: pointer;
+}
 .curiosity-feature-card:hover {
   transform: translateY(-4px);
   border-color: rgba(217, 179, 108, 0.45);
@@ -696,11 +699,13 @@ h1, h2, h3, h4 {
   margin-bottom: 14px;
 }
 
-.curiosity-card-icon {
+.curiosity-card-icon,
+.curiosity-icon-badge {
   font-size: 1.7rem;
 }
 
-.curiosity-card-num {
+.curiosity-card-num,
+.curiosity-number {
   font-family: Georgia, serif;
   font-size: 1.8rem;
   font-weight: 700;
@@ -708,7 +713,8 @@ h1, h2, h3, h4 {
   line-height: 1;
 }
 
-.curiosity-category-pill {
+.curiosity-category-pill,
+.curiosity-category-tag {
   display: inline-block;
   align-self: flex-start;
   padding: 4px 10px;
@@ -735,7 +741,36 @@ h1, h2, h3, h4 {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.65;
-  margin: 0;
+  margin: 0 0 14px;
+  flex: 1;
+}
+
+.curiosity-read-more {
+  margin-top: auto;
+  padding-top: 10px;
+  color: var(--gold-soft);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.curiosity-feature-card:hover .curiosity-read-more {
+  color: var(--gold);
+  transform: translateX(4px);
+}
+
+body[data-theme='light'] .curiosity-feature-card {
+  background: #ffffff;
+  border-color: rgba(200, 165, 90, 0.28);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+}
+body[data-theme='light'] .curiosity-feature-card:hover {
+  border-color: rgba(180, 140, 60, 0.6);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================
