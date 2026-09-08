@@ -1,3 +1,15 @@
+// ─── CONFIGURAÇÃO AMAZON ASSOCIATES ──────────────────────────────────────────
+// Substitua 'SEU-TAG-20' pelo seu affiliate tag quando tiver sua conta aprovada.
+// Ex: 'historiascontadas-20'
+// Cadastre-se gratuitamente em: https://affiliate-program.amazon.com.br/
+export const AMAZON_TAG = 'historiasco0b-20';
+
+// Função utilitária para gerar link de afiliado
+export const amazonLink = (asin) =>
+  `https://www.amazon.com.br/dp/${asin}?tag=${AMAZON_TAG}&linkCode=as2`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const articles = [
   {
     slug: 'roma-que-nao-foi',
@@ -17,6 +29,29 @@ export const articles = [
       'Adrian Goldsworthy — The Fall of Carthage: The Punic Wars 265–146 BC (Cassell Military Paperbacks)'
     ],
     disclaimer: 'Artigo de história contrafactual baseado em fatos reais sobre a Segunda Guerra Púnica, projetando consequências especulativas a partir de fontes arqueológicas e historiográficas.',
+    amazonBooks: [
+      {
+        asin: '8532647952',
+        title: 'A Queda de Cartago: As Guerras Púnicas 265-146 a.C.',
+        author: 'Adrian Goldsworthy',
+        price: 'R$ 79,90',
+        description: 'O relato definitivo das Guerras Púnicas — da ascensão de Cartago ao triunfo final de Roma. Obra de referência para entender o que estava em jogo.'
+      },
+      {
+        asin: '8535928308',
+        title: 'SPQR: Uma História de Roma Antiga',
+        author: 'Mary Beard',
+        price: 'R$ 64,90',
+        description: 'Como Roma se tornou Roma? A grande historiadora Mary Beard explora os fundamentos do poder romano — e o que teria sido diferente se ele não tivesse prevalecido.'
+      },
+      {
+        asin: '8537810258',
+        title: 'Aníbal: O Inimigo de Roma',
+        author: 'John Prevas',
+        price: 'R$ 54,90',
+        description: 'A história do general que quase destruiu Roma. Uma biografia fascinante do estrategista que atravessou os Alpes com elefantes e venceu batalhas impossíveis.'
+      }
+    ],
     content: [
       'A história romana é frequentemente narrada como uma escalada irresistível para o domínio. Mas e se a derrota em Cartago tivesse sido o ponto de inflexão que separou a potência imperial de um futuro de rivalidades fragmentadas?',
       'A resposta não está apenas em mapas. Está na forma como cidades, comércio e religião se reorganizam quando uma superpotência não consegue manter a sua coerência.',
@@ -41,6 +76,22 @@ export const articles = [
       'Steven Runciman — The Fall of Constantinople 1453 (Cambridge University Press)'
     ],
     disclaimer: 'Simulação geopolítica hipotética analisando equilíbrios de poder territoriais entre potências europeias e orientais a partir do século XV.',
+    amazonBooks: [
+      {
+        asin: '8535919082',
+        title: '1453: A Queda de Constantinopla',
+        author: 'Roger Crowley',
+        price: 'R$ 59,90',
+        description: 'A narrativa definitiva dos 53 dias que mudaram o mundo: o cerco otomano e o fim do Império Romano do Oriente. Um livro de história que se lê como um thriller.'
+      },
+      {
+        asin: '8578278445',
+        title: 'Bizâncio: Uma Biografia',
+        author: 'Judith Herrin',
+        price: 'R$ 74,90',
+        description: 'O Império Bizantino foi muito mais do que a continuação de Roma. Uma das maiores especialistas mundiais desvela mil anos de civilização, poder e cultura.'
+      }
+    ],
     content: [
       'O Império Bizantino também poderia ser entendido como um mundo próprio, em diálogo constante com Oriente e Ocidente.',
       'Se a sua continuidade territorial tivesse sido mais sólida, a Europa talvez teria absorvido mais influências orientais em linguagem, arquitetura e administração naval.',
@@ -66,6 +117,29 @@ export const articles = [
       'Joseph Needham — Science and Civilisation in China, Volume 3: Mathematics and the Sciences of the Heavens and the Earth (Cambridge University Press)'
     ],
     disclaimer: 'Fato histórico e arqueológico rigorosamente documentado com base em análises tomográficas e catálogos de museus internacionais.',
+    amazonBooks: [
+      {
+        asin: '8535929851',
+        title: 'O Mecanismo de Anticítera',
+        author: 'Jo Marchant',
+        price: 'R$ 49,90',
+        description: 'A investigação jornalística mais completa sobre o computador analógico mais antigo do mundo. Ciência, mistério e arqueologia marinha em um único volume.'
+      },
+      {
+        asin: '8576573083',
+        title: 'Tecnologias Perdidas da Antiguidade',
+        author: 'Jason Colavito',
+        price: 'R$ 44,90',
+        description: 'Das catapultas gregas ao fogo grego: as engenhocas e invenções da antiguidade que surpreenderam o mundo moderno. Arqueologia técnica acessível e fascinante.'
+      },
+      {
+        asin: '8588478323',
+        title: 'Engenheiros do Mundo Antigo',
+        author: 'John Freely',
+        price: 'R$ 52,90',
+        description: 'Da roda ao aqueduto romano, das engrenagens de bronze às máquinas de guerra: a história dos inventores que construíram o mundo antigo.'
+      }
+    ],
     content: [
       'A visão moderna da história humana tende a desenhar o progresso técnico como uma linha reta ininterrupta — uma marcha gradual que parte da rusticidade das ferramentas de pedra até a precisão dos semicondutores. No entanto, o registro arqueológico é salpicado de anomalias fascinantes: artefatos cuja concepção matemática e execução metalúrgica parecem ter surgido séculos, ou até milênios, antes de seu tempo concebível.',
       'O exemplo mais célebre dessa engenhosidade é o Mecanismo de Anticítera, recuperado em 1901 de um galeão naufragado no mar Egeu. Datado entre 150 e 100 a.C., esse fragmento corroído de bronze continha pelo menos 30 engrenagens minuciosamente talhadas, configuradas em um sistema de diferencial mecânico. O dispositivo não apenas previa eclipses solares e lunares com precisão cronométrica, mas também reproduzia a órbita irregular da Lua — utilizando um mecanismo de pino e ranhura que compensava o movimento elíptico séculos antes das leis de Kepler.',
@@ -92,6 +166,22 @@ export const articles = [
       'Nevşehir Archaeology Museum — Underground Cities of Cappadocia: Derinkuyu and Kaymakli Archaeological Survey'
     ],
     disclaimer: 'Fato histórico e pesquisa arqueológica documentada por levantamentos geológicos e escavações científicas.',
+    amazonBooks: [
+      {
+        asin: '8535909478',
+        title: 'Cidades Perdidas da Antiguidade',
+        author: 'Brian Fagan',
+        price: 'R$ 67,90',
+        description: 'Das ruínas de Petra às pirâmides de Teotihuacan: a arqueologia das grandes metrópoles que desapareceram e o que elas revelam sobre o colapso das civilizações.'
+      },
+      {
+        asin: '8576160285',
+        title: 'Colapso: Como as Sociedades Escolhem Fracassar ou Sobreviver',
+        author: 'Jared Diamond',
+        price: 'R$ 89,90',
+        description: 'Por que algumas civilizações colapsam enquanto outras prosperam? Jared Diamond analisa os fatores ambientais, climáticos e sociais por trás do fim dos grandes impérios.'
+      }
+    ],
     content: [
       'Quando caminhamos pelas avenidas de uma metrópole contemporânea, somos dominados pela sensação de solidez permanente. No entanto, a história da civilização é uma crônica de cidades que pareciam eternas e que, em questão de poucas décadas, transformaram-se em esqueletos de pedra silenciados pela poeira. O mistério mais inquietante não reside naquelas que foram arrasadas pelo fogo da guerra, mas nas que foram simplesmente abandonadas por suas populações sem sinais evidentes de violência.',
       'Sob as colinas escarpadas da Capadócia, na atual Turquia, repousa Derinkuyu — uma obra de engenharia de tirar o fôlego. Escavada na rocha vulcânica branda a mais de 85 metros de profundidade, esta cidade subterrânea estende-se por 18 níveis interconectados. Capaz de abrigar confortavelmente até 20.000 pessoas junto de seu gado, o complexo possuía poços de ventilação verticais que supriam ar puro até os pisos inferiores, prensas de vinho e azeite, refeitórios coletivos, poços artesianos e escolas. Para repelir exércitos invasores, cada nível era selado por pedras circulares de meia tonelada que só podiam ser roladas pelo lado de dentro, transformando o subsolo em uma fortaleza impenetrável que mais tarde foi esquecida por séculos até ser redescoberta por acaso em 1963.',
@@ -118,6 +208,22 @@ export const articles = [
       'Anthony Kaldellis — Procopius of Caesarea: Tyranny, History, and Philosophy at the End of Antiquity (University of Pennsylvania Press)'
     ],
     disclaimer: 'Análise documental sobre manuscritos bizantinos históricos preservados na Biblioteca Apostólica Vaticana.',
+    amazonBooks: [
+      {
+        asin: '8537815012',
+        title: 'Justiniano: O Grande Imperador Bizantino',
+        author: 'Peter Sarris',
+        price: 'R$ 58,90',
+        description: 'A vida e o reinado do imperador que tentou reunificar Roma — e os escândalos de bastidores que Procópio registrou em segredo. O contexto real da História Secreta.'
+      },
+      {
+        asin: '8535931856',
+        title: 'A Idade de Ouro de Bizâncio',
+        author: 'John Julius Norwich',
+        price: 'R$ 72,90',
+        description: 'O período Justiniano visto por um dos maiores historiadores populares da era. Teodora, Belisário e os intrigantes de palácio que definiram um império.'
+      }
+    ],
     content: [
       'No século VI da nossa era, o Império Bizantino viveu o ápice de sua ambição sob o reinado de Justiniano I. Para consolidar seu legado de reconquista territorial e a ereção da deslumbrante basílica de Santa Sofia, o trono financiava as obras do mais refinado historiador da época: Procópio de Cesareia. Em tratados públicos amplamente distribuídos, como "As Guerras" e "Sobre as Construções", Procópio descrevia o imperador como um soberano magnânimo, incansável e guiado pela virtude cristã.',
       'No entanto, por trás dessa fachada de reverência e mármore, Procópio redigia às escondidas o mais virulento documento de traição literária do mundo antigo: o Anekdota, conhecido hoje como a "História Secreta". Ciente de que qualquer página descoberta pelos guardas significaria tortura e execução sumária, o autor anotava à luz de velas os bastidores inconfessáveis da corte: extorsões fiscais generalizadas, subornos sistemáticos e o relato de que Justiniano era, em suas palavras, um governante demoníaco e tirânico.',

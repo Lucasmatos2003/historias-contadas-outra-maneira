@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { articles, categoryInfo } from './data';
+import { articles, categoryInfo, amazonLink } from './data';
 import { getAccessToken, isConfigured, mapUser, supabase } from './supabase';
 import '../assets/css/style.css';
 import './responsive.css';
@@ -197,6 +197,59 @@ function FavoriteButton({ slug }) {
   };
   return <button className={`save-button ${favorite ? 'is-favorite' : ''}`} aria-pressed={favorite} onClick={toggle}>{favorite ? '★ Salvo' : '☆ Salvar'}</button>;
 }
+
+// ─── AMAZON BOOK WIDGET ───────────────────────────────────────────────────────
+
+function AmazonBookWidget({ books, compact = false }) {
+  if (!books || !books.length) return null;
+  return (
+    <div className={`amazon-widget ${compact ? 'amazon-widget--compact' : ''}`}>
+      <div className="amazon-widget-header">
+        <span className="amazon-widget-icon">📚</span>
+        <div>
+          <p className="amazon-widget-eyebrow">Leituras recomendadas</p>
+          <h4 className="amazon-widget-title">Aprofunde seu Conhecimento</h4>
+        </div>
+        <span className="amazon-widget-badge">Amazon Associates</span>
+      </div>
+      <div className={`amazon-books-grid ${books.length === 1 ? 'amazon-books-grid--single' : ''}`}>
+        {books.map((book) => (
+          <a
+            key={book.asin}
+            href={amazonLink(book.asin)}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="amazon-book-card"
+            aria-label={`Ver ${book.title} na Amazon`}
+          >
+            <div className="amazon-book-cover">
+              <span className="amazon-book-cover-icon">📖</span>
+            </div>
+            <div className="amazon-book-info">
+              <span className="amazon-book-category">Livro</span>
+              <h5 className="amazon-book-title">{book.title}</h5>
+              <span className="amazon-book-author">{book.author}</span>
+              {!compact && <p className="amazon-book-desc">{book.description}</p>}
+              <div className="amazon-book-footer">
+                <span className="amazon-book-price">{book.price}</span>
+                <span className="amazon-book-cta">
+                  Ver na Amazon
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                    <path d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+      <p className="amazon-disclosure">* Links de afiliado. Ao comprar, você apoia a revista sem custo extra.</p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 
 function ArticleCard({ article, index = 0 }) {
   const go = useNavigation();
@@ -651,6 +704,56 @@ function Sidebar({ user }) {
           </div>
         </div>
       </div>
+
+      {/* BIBLIOTECA DA REVISTA — AMAZON SIDEBAR */}
+      <div className="sidebar-amazon-card">
+        <div className="sidebar-amazon-header">
+          <span className="sidebar-amazon-icon">📚</span>
+          <div>
+            <p className="sidebar-amazon-eyebrow">Biblioteca da Revista</p>
+            <strong className="sidebar-amazon-title">Livros para ir mais fundo</strong>
+          </div>
+        </div>
+        <div className="sidebar-amazon-books">
+          {[
+            {
+              asin: '8535928308',
+              title: 'SPQR: Uma História de Roma Antiga',
+              author: 'Mary Beard',
+              price: 'R$ 64,90'
+            },
+            {
+              asin: '8576160285',
+              title: 'Colapso: Como as Sociedades Escolhem Fracassar ou Sobreviver',
+              author: 'Jared Diamond',
+              price: 'R$ 89,90'
+            },
+            {
+              asin: '8535919082',
+              title: '1453: A Queda de Constantinopla',
+              author: 'Roger Crowley',
+              price: 'R$ 59,90'
+            }
+          ].map((book) => (
+            <a
+              key={book.asin}
+              href={amazonLink(book.asin)}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="sidebar-amazon-book-row"
+              aria-label={`Ver ${book.title} na Amazon`}
+            >
+              <span className="sidebar-amazon-book-thumb">📖</span>
+              <div className="sidebar-amazon-book-info">
+                <span className="sidebar-amazon-book-title">{book.title}</span>
+                <span className="sidebar-amazon-book-meta">{book.author} · {book.price}</span>
+              </div>
+              <span className="sidebar-amazon-book-arrow">›</span>
+            </a>
+          ))}
+        </div>
+        <p className="sidebar-amazon-disclosure">* Links de afiliado Amazon Associates</p>
+      </div>
     </aside>
   );
 }
@@ -856,6 +959,12 @@ function Article({ slug, articles, user }) {
         <div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} />
         <div className="article-body">
           {firstHalf.map((paragraph, idx) => <p key={idx}>{paragraph}</p>)}
+
+          {/* BLOCO AMAZON NO MEIO DO ARTIGO */}
+          {article.amazonBooks && article.amazonBooks.length > 0 && (
+            <AmazonBookWidget books={article.amazonBooks.slice(0, 2)} />
+          )}
+
           {article.secondaryImage && (
             <figure className="article-body-figure">
               <img src={article.secondaryImage} alt={`Ilustração para ${article.title}`} className="article-body-image" />
@@ -890,6 +999,11 @@ function Article({ slug, articles, user }) {
                 : 'Esta obra é um exercício de história alternativa fundamentado em premissas e eventos reais, explorando caminhos não trilhados pela narrativa convencional.')}
             </p>
           </div>
+
+          {/* BLOCO AMAZON NO FINAL DO ARTIGO */}
+          {article.amazonBooks && article.amazonBooks.length > 0 && (
+            <AmazonBookWidget books={article.amazonBooks} />
+          )}
 
           {/* HISTÓRIAS RELACIONADAS / RETENÇÃO */}
           <div className="related-articles-section">

@@ -3484,3 +3484,409 @@ body.light-theme .cover-title-display {
   }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AMAZON BOOK WIDGET — Artigo (meio e final)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.amazon-widget {
+  margin: 2.5rem 0;
+  border: 1px solid rgba(217, 179, 108, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(18, 32, 48, 0.95) 0%, rgba(13, 27, 45, 0.98) 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+.amazon-widget::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.amazon-widget-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.amazon-widget-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(217, 179, 108, 0.4));
+}
+
+.amazon-widget-eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+
+.amazon-widget-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.amazon-widget-badge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #ff9900;
+  border: 1px solid rgba(255, 153, 0, 0.3);
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Grid de livros */
+.amazon-books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  background: rgba(255,255,255,0.04);
+}
+
+.amazon-books-grid--single {
+  grid-template-columns: 1fr;
+}
+
+/* Card individual */
+.amazon-book-card {
+  display: flex;
+  gap: 14px;
+  padding: 20px 24px;
+  background: rgba(12, 22, 36, 0.6);
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.amazon-book-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(217, 179, 108, 0.04), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.amazon-book-card:hover {
+  background: rgba(20, 34, 54, 0.95);
+}
+
+.amazon-book-card:hover::after {
+  opacity: 1;
+}
+
+.amazon-book-card:hover .amazon-book-cta {
+  color: #ff9900;
+  gap: 6px;
+}
+
+/* Capa do livro */
+.amazon-book-cover {
+  width: 64px;
+  height: 84px;
+  border-radius: 6px;
+  background: linear-gradient(145deg, rgba(217, 179, 108, 0.15), rgba(217, 179, 108, 0.05));
+  border: 1px solid rgba(217, 179, 108, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 2px 4px 12px rgba(0,0,0,0.3);
+}
+
+.amazon-book-cover-icon {
+  font-size: 1.8rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* Info do livro */
+.amazon-book-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.amazon-book-category {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+
+.amazon-book-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.amazon-book-author {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.amazon-book-desc {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: rgba(207, 201, 189, 0.75);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.amazon-book-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.amazon-book-price {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ff9900;
+}
+
+.amazon-book-cta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: color 0.2s, gap 0.2s;
+  white-space: nowrap;
+}
+
+/* Nota de afiliado */
+.amazon-disclosure {
+  margin: 0;
+  padding: 10px 24px;
+  font-size: 0.65rem;
+  color: rgba(207, 201, 189, 0.4);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIDEBAR — Biblioteca da Revista (Amazon)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sidebar-amazon-card {
+  border-radius: 14px;
+  border: 1px solid rgba(217, 179, 108, 0.18);
+  background: linear-gradient(145deg, rgba(18, 32, 48, 0.9), rgba(10, 22, 36, 0.95));
+  overflow: hidden;
+  position: relative;
+  margin-top: 0;
+}
+
+.sidebar-amazon-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff9900 40%, transparent);
+}
+
+.sidebar-amazon-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar-amazon-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.sidebar-amazon-eyebrow {
+  margin: 0 0 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #ff9900;
+}
+
+.sidebar-amazon-title {
+  font-size: 0.82rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.sidebar-amazon-books {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-amazon-book-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 18px;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.18s ease;
+  position: relative;
+}
+
+.sidebar-amazon-book-row:last-child {
+  border-bottom: none;
+}
+
+.sidebar-amazon-book-row:hover {
+  background: rgba(217, 179, 108, 0.05);
+}
+
+.sidebar-amazon-book-row:hover .sidebar-amazon-book-arrow {
+  transform: translateX(3px);
+  color: #ff9900;
+}
+
+.sidebar-amazon-book-thumb {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.sidebar-amazon-book-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-amazon-book-title {
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sidebar-amazon-book-meta {
+  font-size: 0.68rem;
+  color: rgba(207, 201, 189, 0.55);
+}
+
+.sidebar-amazon-book-arrow {
+  font-size: 1.1rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.sidebar-amazon-disclosure {
+  margin: 0;
+  padding: 8px 18px;
+  font-size: 0.62rem;
+  color: rgba(207, 201, 189, 0.35);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES — Amazon
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.light-theme .amazon-widget {
+  background: linear-gradient(135deg, #fafaf7 0%, #f4f0e8 100%);
+  border-color: rgba(139, 103, 56, 0.2);
+}
+
+.light-theme .amazon-book-card {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.light-theme .amazon-book-card:hover {
+  background: rgba(245, 241, 232, 0.95);
+}
+
+.light-theme .amazon-book-cover {
+  background: linear-gradient(145deg, rgba(139, 103, 56, 0.08), rgba(139, 103, 56, 0.03));
+  border-color: rgba(139, 103, 56, 0.15);
+}
+
+.light-theme .sidebar-amazon-card {
+  background: linear-gradient(145deg, #fafaf7, #f4f0e8);
+  border-color: rgba(139, 103, 56, 0.18);
+}
+
+.light-theme .sidebar-amazon-book-row:hover {
+  background: rgba(139, 103, 56, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE — Amazon Widget
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+  .amazon-widget-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .amazon-widget-badge {
+    margin-left: 0;
+  }
+
+  .amazon-books-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .amazon-book-card {
+    padding: 16px;
+  }
+
+  .amazon-book-cover {
+    width: 52px;
+    height: 68px;
+  }
+
+  .amazon-book-desc {
+    display: none;
+  }
+
+  .amazon-widget-header {
+    padding: 16px;
+  }
+}
