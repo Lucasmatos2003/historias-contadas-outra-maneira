@@ -250,8 +250,168 @@ function AmazonBookWidget({ books, compact = false }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── READING PROGRESS BAR ──────────────────────────────────────────────────────
+
+function ReadingProgressBar() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    let raf;
+    const update = () => {
+      const scrollY = window.scrollY || window.pageYOffset;
+      const docH = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(docH > 0 ? Math.min(100, (scrollY / docH) * 100) : 0);
+    };
+    const onScroll = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    update();
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
+  }, []);
+  return (
+    <div
+      className="reading-progress-bar"
+      style={{ width: `${progress}%` }}
+      aria-hidden="true"
+      role="progressbar"
+      aria-valuenow={Math.round(progress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    />
+  );
+}
+
+// ─── SHARE BAR ─────────────────────────────────────────────────────────────────────
+
+function ShareBar({ title, url }) {
+  const [copied, setCopied] = useState(false);
+  const encodedUrl = encodeURIComponent(url);
+  const encodedTitle = encodeURIComponent(title);
+  const whatsappHref = `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`;
+  const twitterHref = `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.cssText = 'position:fixed;opacity:0;';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <>
+      <div className="share-bar" role="complementary" aria-label="Compartilhar artigo">
+        <span className="share-bar-label">Compartilhar</span>
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="share-btn share-btn--whatsapp"
+          aria-label="Compartilhar no WhatsApp"
+          title="Compartilhar no WhatsApp"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.09.549 4.049 1.504 5.741L0 24l6.259-1.504A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.797 9.797 0 01-5.014-1.38l-.36-.213-3.714.893.909-3.624-.234-.373A9.776 9.776 0 012.182 12C2.182 6.573 6.573 2.182 12 2.182c5.426 0 9.818 4.391 9.818 9.818 0 5.426-4.392 9.818-9.818 9.818z"/>
+          </svg>
+        </a>
+        <a
+          href={twitterHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="share-btn share-btn--twitter"
+          aria-label="Compartilhar no Twitter/X"
+          title="Compartilhar no Twitter/X"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.261 5.636 5.903-5.636zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </a>
+        <button
+          onClick={copyLink}
+          className={`share-btn share-btn--copy ${copied ? 'is-copied' : ''}`}
+          aria-label="Copiar link"
+          title="Copiar link do artigo"
+          type="button"
+        >
+          {copied ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18" aria-hidden="true">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2"/>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+          )}
+        </button>
+      </div>
+      <div className={`share-toast ${copied ? 'share-toast--visible' : ''}`} role="status" aria-live="polite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="14" height="14" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        Link copiado!
+      </div>
+    </>
+  );
+}
+
+// ─── READ NEXT GRID ─────────────────────────────────────────────────────────────
+
+function ReadNextGrid({ currentSlug, currentCategory, articles }) {
+  const go = useNavigation();
+  const fallbackImg = 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=75';
+  const sameCategory = articles.filter((a) => a.slug !== currentSlug && a.categorySlug === currentCategory);
+  const others = articles.filter((a) => a.slug !== currentSlug && a.categorySlug !== currentCategory);
+  const readNext = [...sameCategory, ...others].slice(0, 3);
+  if (!readNext.length) return null;
+  return (
+    <section className="read-next-section" aria-labelledby="read-next-heading">
+      <div className="read-next-header">
+        <div className="read-next-badge"><span aria-hidden="true">⟳</span> Continue a Jornada</div>
+        <h3 id="read-next-heading">Histórias que você vai querer ler agora</h3>
+        <p className="read-next-sub">Selecionadas com base no que você acabou de ler</p>
+      </div>
+      <div className="read-next-grid">
+        {readNext.map((art) => (
+          <article
+            key={art.slug}
+            className="read-next-card"
+            onClick={() => { go(`/artigo/${art.slug}`); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(`/artigo/${art.slug}`); window.scrollTo({ top: 0, behavior: 'smooth' }); } }}
+            role="button"
+            tabIndex={0}
+            aria-label={`Ler: ${art.title}`}
+          >
+            <div className="read-next-card-img">
+              <img
+                src={art.image || art.cover_image || fallbackImg}
+                alt={art.title}
+                loading="lazy"
+              />
+              <span className="read-next-card-cat">{art.category}</span>
+            </div>
+            <div className="read-next-card-body">
+              <h4 className="read-next-card-title">{art.title}</h4>
+              <p className="read-next-card-excerpt">{art.excerpt}</p>
+              <span className="read-next-card-meta">{art.readingTime} de leitura <span aria-hidden="true">→</span></span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function ArticleCard({ article, index = 0 }) {
+
   const go = useNavigation();
   const cover = article.image || article.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80';
   return (
@@ -889,40 +1049,71 @@ function Article({ slug, articles, user }) {
   const go = useNavigation();
 
   useEffect(() => {
+    const pageUrl = window.location.href;
+    const imgUrl = article.image || article.cover_image || '';
+    const desc = article.excerpt || article.title;
+
+    // Helper: upsert a meta tag
+    const setMeta = (attrs, value) => {
+      const selector = Object.entries(attrs).map(([k, v]) => `[${k}="${v}"]`).join('');
+      let el = document.querySelector(`meta${selector}`);
+      if (!el) {
+        el = document.createElement('meta');
+        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', value);
+    };
+
+    // Basic
     document.title = `${article.title} | Histórias Contadas de Outra Maneira`;
-    let descMeta = document.querySelector('meta[name="description"]');
-    if (!descMeta) {
-      descMeta = document.createElement('meta');
-      descMeta.setAttribute('name', 'description');
-      document.head.appendChild(descMeta);
-    }
-    descMeta.setAttribute('content', article.excerpt || article.title);
+    setMeta({ name: 'description' }, desc);
 
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute('content', article.title);
+    // Open Graph
+    setMeta({ property: 'og:type' }, 'article');
+    setMeta({ property: 'og:site_name' }, 'Histórias Contadas de Outra Maneira');
+    setMeta({ property: 'og:locale' }, 'pt_BR');
+    setMeta({ property: 'og:title' }, article.title);
+    setMeta({ property: 'og:description' }, desc);
+    setMeta({ property: 'og:url' }, pageUrl);
+    setMeta({ property: 'og:image' }, imgUrl);
+    setMeta({ property: 'og:image:width' }, '1200');
+    setMeta({ property: 'og:image:height' }, '630');
+    setMeta({ property: 'og:image:alt' }, article.title);
 
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (!ogDesc) {
-      ogDesc = document.createElement('meta');
-      ogDesc.setAttribute('property', 'og:description');
-      document.head.appendChild(ogDesc);
-    }
-    ogDesc.setAttribute('content', article.excerpt || article.title);
+    // Twitter / X Cards
+    setMeta({ name: 'twitter:card' }, 'summary_large_image');
+    setMeta({ name: 'twitter:title' }, article.title);
+    setMeta({ name: 'twitter:description' }, desc);
+    setMeta({ name: 'twitter:image' }, imgUrl);
+    setMeta({ name: 'twitter:image:alt' }, article.title);
 
-    let ogImage = document.querySelector('meta[property="og:image"]');
-    if (!ogImage) {
-      ogImage = document.createElement('meta');
-      ogImage.setAttribute('property', 'og:image');
-      document.head.appendChild(ogImage);
+    // JSON-LD Article Schema
+    let jsonLd = document.getElementById('article-jsonld');
+    if (!jsonLd) {
+      jsonLd = document.createElement('script');
+      jsonLd.type = 'application/ld+json';
+      jsonLd.id = 'article-jsonld';
+      document.head.appendChild(jsonLd);
     }
-    ogImage.setAttribute('content', article.image || article.cover_image || '');
+    jsonLd.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: article.title,
+      description: desc,
+      image: imgUrl,
+      author: { '@type': 'Person', name: article.author || 'Equipe Editorial' },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Histórias Contadas de Outra Maneira',
+        logo: { '@type': 'ImageObject', url: `${window.location.origin}/favicon.ico` }
+      },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl }
+    });
 
     window.scrollTo({ top: 0, behavior: 'instant' });
+
+    return () => { document.getElementById('article-jsonld')?.remove(); };
   }, [article]);
 
   const paragraphs = (Array.isArray(article.content) ? article.content : String(article.content).split('\n')).filter(Boolean);
@@ -942,6 +1133,8 @@ function Article({ slug, articles, user }) {
 
   return (
     <main className="container article-layout">
+      <ReadingProgressBar />
+      <ShareBar title={article.title} url={window.location.href} />
       <article className="article-content-panel">
         <div className="article-header">
           <div className="article-category-row">
@@ -1005,34 +1198,8 @@ function Article({ slug, articles, user }) {
             <AmazonBookWidget books={article.amazonBooks} />
           )}
 
-          {/* HISTÓRIAS RELACIONADAS / RETENÇÃO */}
-          <div className="related-articles-section">
-            <div className="related-head">
-              <p className="eyebrow">Continue explorando</p>
-              <h3>Histórias Relacionadas</h3>
-            </div>
-            <div className="related-cards-grid">
-              {fallbackRelated.map((rel) => (
-                <div
-                  key={rel.slug}
-                  className="related-card"
-                  onClick={() => {
-                    go(`/artigo/${rel.slug}`);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <img src={rel.image || rel.cover_image} alt={rel.title} className="related-card-thumb" />
-                  <div className="related-card-content">
-                    <span className="related-cat">{rel.category}</span>
-                    <h5>{rel.title}</h5>
-                    <small>{rel.readingTime} de leitura</small>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* READ NEXT — RETENÇÃO E LOOP DE LEITURA */}
+          <ReadNextGrid currentSlug={article.slug} currentCategory={article.categorySlug} articles={articles} />
         </div>
       </article>
       <Sidebar user={user} />
