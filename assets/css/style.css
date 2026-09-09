@@ -1777,6 +1777,34 @@ body[data-theme='light'] .curiosity-feature-card:hover {
   font-size: 1.05rem;
 }
 
+.article-body a.article-affiliate-link {
+  color: var(--gold);
+  border-bottom: 1.5px solid rgba(217, 179, 108, 0.45);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(217, 179, 108, 0.08);
+  transition: all 0.2s ease;
+  display: inline;
+}
+
+.article-body a.article-affiliate-link:hover {
+  color: #fff;
+  border-bottom-color: var(--gold);
+  background: rgba(217, 179, 108, 0.22);
+  box-shadow: 0 2px 8px rgba(217, 179, 108, 0.15);
+}
+
+.article-body a.article-inline-link {
+  color: var(--gold-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.article-body a.article-inline-link:hover {
+  color: var(--gold);
+}
+
 .site-footer {
   margin-top: 56px;
   padding: 34px 28px 18px;
