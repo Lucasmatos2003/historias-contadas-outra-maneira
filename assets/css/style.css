@@ -174,6 +174,60 @@ h1, h2, h3, h4 {
   background: rgba(217, 179, 108, 0.22);
   box-shadow: 0 0 12px rgba(217, 179, 108, 0.25);
 }
+
+/* ============================================================
+   HEADER EXCLUSIVO PARA CONTA ADMIN EM DESKTOP
+   Ajusta proporcionalmente os espaçamentos apenas para admin,
+   evitando sobreposição dos 8 links com os botões de controle.
+   ============================================================ */
+@media (min-width: 1321px) {
+  .site-header.site-header-admin {
+    gap: clamp(8px, 1.1vw, 16px);
+    padding: 10px clamp(12px, 1.5vw, 20px);
+  }
+  .site-header.site-header-admin .brand-row {
+    gap: 10px;
+  }
+  .site-header.site-header-admin .brand-mark {
+    width: 40px;
+    height: 40px;
+    font-size: 1.55rem;
+  }
+  .site-header.site-header-admin .brand-text-block h1 {
+    font-size: clamp(0.9rem, 1.02vw, 1.12rem);
+  }
+  .site-header.site-header-admin .main-nav {
+    gap: clamp(3px, 0.6vw, 8px);
+    font-size: clamp(0.74rem, 0.78vw, 0.82rem);
+    flex-shrink: 0;
+  }
+  .site-header.site-header-admin .main-nav a {
+    padding: 5px 3px;
+  }
+  .site-header.site-header-admin .main-nav a.nav-badge-submit {
+    padding: 4px 9px;
+    font-size: 0.76rem;
+  }
+  .site-header.site-header-admin .main-nav a.nav-badge-admin {
+    padding: 4px 10px;
+    font-size: 0.76rem;
+    gap: 4px;
+  }
+  .site-header.site-header-admin .header-controls {
+    margin-left: 6px;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .site-header.site-header-admin .icon-button {
+    width: 35px;
+    height: 35px;
+    font-size: 1.05rem;
+  }
+  .site-header.site-header-admin .profile-chip {
+    width: 35px;
+    height: 35px;
+  }
+}
 .loading-state {
   display: flex;
   align-items: center;

@@ -120,7 +120,7 @@ function Layout({ children, articles, user, profile, isAdmin, onLogout }) {
 
   return (
     <div className="page-shell">
-      <header className="site-header">
+      <header className={`site-header ${isAdmin ? 'site-header-admin' : ''}`}>
         <a className="brand-row brand-link" href="/" onClick={link('/')}>
           <span className="brand-mark">H</span>
           <span className="brand-text-block">
