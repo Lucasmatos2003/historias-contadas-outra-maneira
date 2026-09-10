@@ -14,12 +14,34 @@ class RequestError extends Error {
   }
 }
 
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function rateLimit(request, scope, limit, windowMs) {
   const forwardedFor = request.headers['x-forwarded-for'];
-  const ip = (forwardedFor || request.headers['x-real-ip'] || 'unknown').split(',')[0].trim();
+  const rawIp = (forwardedFor || request.headers['x-real-ip'] || request.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const ip = rawIp.replace(/[^a-zA-Z0-9.:_-]/g, '').slice(0, 64) || 'unknown';
   const key = `${scope}:${ip}`;
   const now = Date.now();
   const buckets = globalThis.__mentoraRateLimits || (globalThis.__mentoraRateLimits = new Map());
+
+  // Limpeza periódica preventiva de memória a cada 5 minutos
+  if (!globalThis.__lastRateLimitCleanup || now - globalThis.__lastRateLimitCleanup > 5 * 60 * 1000) {
+    globalThis.__lastRateLimitCleanup = now;
+    for (const [k, b] of buckets.entries()) {
+      if (now - b.startedAt > 60 * 60 * 1000) {
+        buckets.delete(k);
+      }
+    }
+  }
+
   const bucket = buckets.get(key) || { count: 0, startedAt: now };
   if (now - bucket.startedAt >= windowMs) {
     bucket.count = 0;
@@ -38,10 +60,7 @@ function publicError(error, fallback = 'Não foi possível concluir a operação
   if (error?.message === 'Acesso de administrador necessário.') return { status: 403, message: error.message };
   if (error?.status === 400) return { status: 400, message: error.message };
   console.error(error);
-  const detail = error?.message || error?.details;
-  if (detail && typeof detail === 'string' && !detail.includes('SUPABASE_') && !detail.includes('SERVICE_ROLE') && !detail.includes('KEY')) {
-    return { status: 500, message: `${fallback} (${detail})` };
-  }
+  // Não vazar erros internos do banco de dados, chaves ou stack traces para o cliente
   return { status: 500, message: fallback };
 }
 
@@ -291,4 +310,4 @@ function validateArticle(payload) {
   return { title, excerpt, content, authorEmail, category, coverImage, secondaryImage };
 }
 
-export { createArticle, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, supabaseAdmin, updateArticle, validateArticle, validateProfilePhoto, verifyAdmin, verifyMercadoPagoSignature, verifyUser };
+export { createArticle, escapeHtml, getAllArticles, getArticle, getArticlesByAuthor, getPublicWriter, mercadoPagoRequest, publicError, rateLimit, requireEnv, RequestError, supabaseAdmin, updateArticle, validateArticle, validateProfilePhoto, verifyAdmin, verifyMercadoPagoSignature, verifyUser };

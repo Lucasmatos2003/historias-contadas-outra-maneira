@@ -1,4 +1,4 @@
-import { publicError, rateLimit, RequestError, supabaseAdmin } from './_lib/server.js';
+import { escapeHtml, publicError, rateLimit, RequestError, supabaseAdmin } from './_lib/server.js';
 import { sendMail, emailTemplate, CONTACT_EMAIL } from './_lib/mailer.js';
 
 export default async function handler(request, response) {
@@ -43,20 +43,25 @@ export default async function handler(request, response) {
       console.log('Mensagem de contato recebida (backup log):', { name, email, subject, message });
     }
 
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeSubject = escapeHtml(subject.slice(0, 150));
+    const safeMessage = escapeHtml(message);
+
     // Notificação interna para o administrador do site
     const adminHtml = emailTemplate({
-      title: `Nova mensagem de contato: ${subject}`,
-      preheader: `${name} (${email}) enviou uma mensagem pelo formulário de contato.`,
+      title: `Nova mensagem de contato: ${safeSubject}`,
+      preheader: `${safeName} (${safeEmail}) enviou uma mensagem pelo formulário de contato.`,
       body: `
         <h1>📬 Nova Mensagem de Contato</h1>
         <p>Uma nova mensagem foi recebida pelo formulário de contato do site.</p>
         <div class="data-box">
-          <div class="data-row"><span class="data-label">Nome:</span> <span class="data-value">${name}</span></div>
-          <div class="data-row"><span class="data-label">E-mail:</span> <span class="data-value">${email}</span></div>
-          <div class="data-row"><span class="data-label">Assunto:</span> <span class="data-value">${subject.slice(0, 150)}</span></div>
+          <div class="data-row"><span class="data-label">Nome:</span> <span class="data-value">${safeName}</span></div>
+          <div class="data-row"><span class="data-label">E-mail:</span> <span class="data-value">${safeEmail}</span></div>
+          <div class="data-row"><span class="data-label">Assunto:</span> <span class="data-value">${safeSubject}</span></div>
         </div>
         <div class="data-box">
-          <p style="margin:0; color:#e5e7eb; white-space: pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+          <p style="margin:0; color:#e5e7eb; white-space: pre-wrap;">${safeMessage}</p>
         </div>
         <p>Para responder, basta responder este e-mail diretamente — o reply-to está configurado para o remetente.</p>
       `
@@ -68,10 +73,10 @@ export default async function handler(request, response) {
       preheader: 'Obrigado por entrar em contato! Responderemos em breve.',
       body: `
         <h1>Mensagem recebida! ✅</h1>
-        <p>Olá, <strong>${name}</strong>! Obrigado por entrar em contato com a equipe de <strong>Histórias Contadas de Outra Maneira</strong>.</p>
-        <p>Recebemos sua mensagem e entraremos em contato em até <strong>48 horas</strong> pelo e-mail <strong>${email}</strong>.</p>
+        <p>Olá, <strong>${safeName}</strong>! Obrigado por entrar em contato com a equipe de <strong>Histórias Contadas de Outra Maneira</strong>.</p>
+        <p>Recebemos sua mensagem e entraremos em contato em até <strong>48 horas</strong> pelo e-mail <strong>${safeEmail}</strong>.</p>
         <div class="data-box">
-          <div class="data-row"><span class="data-label">Assunto:</span> <span class="data-value">${subject.slice(0, 150)}</span></div>
+          <div class="data-row"><span class="data-label">Assunto:</span> <span class="data-value">${safeSubject}</span></div>
         </div>
         <div class="divider"></div>
         <p style="font-size:13px; color:#6b7280;">Se você não enviou esta mensagem, pode ignorar este e-mail com segurança.</p>

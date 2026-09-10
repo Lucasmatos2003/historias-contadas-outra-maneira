@@ -21,7 +21,7 @@ function createTransporter() {
     port: 465,
     secure: true, // SSL
     auth: { user, pass },
-    tls: { rejectUnauthorized: false }
+    tls: { rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== 'false' }
   });
 }
 

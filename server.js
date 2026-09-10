@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { promises as fs } from 'node:fs';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, isAbsolute, join, normalize, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import http from 'node:http';
 import { URL } from 'node:url';
@@ -107,10 +107,23 @@ function contentType(filePath) {
   }[extname(filePath).toLowerCase()] || 'application/octet-stream';
 }
 
+function setSecurityHeaders(nativeResponse) {
+  nativeResponse.setHeader('X-Content-Type-Options', 'nosniff');
+  nativeResponse.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  nativeResponse.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  nativeResponse.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  nativeResponse.setHeader('X-XSS-Protection', '0');
+  if (process.env.NODE_ENV === 'production') {
+    nativeResponse.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+}
+
 async function serveStatic(nativeResponse, pathname) {
   const requestedPath = pathname === '/' ? '/index.html' : pathname;
-  const filePath = normalize(join(publicDirectory, requestedPath));
-  if (!filePath.startsWith(publicDirectory)) return false;
+  const filePath = normalize(resolve(publicDirectory, '.' + requestedPath));
+  const rel = relative(publicDirectory, filePath);
+  if (rel.startsWith('..') || isAbsolute(rel)) return false;
+
   try {
     const stats = await fs.stat(filePath);
     if (!stats.isFile()) return false;
@@ -129,7 +142,19 @@ async function serveStatic(nativeResponse, pathname) {
 }
 
 const server = http.createServer(async (request, nativeResponse) => {
+  setSecurityHeaders(nativeResponse);
+
   const parsedUrl = new URL(request.url || '/', `http://${request.headers.host || 'localhost'}`);
+
+  if (request.method === 'OPTIONS') {
+    nativeResponse.statusCode = 204;
+    nativeResponse.setHeader('Access-Control-Allow-Origin', '*');
+    nativeResponse.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    nativeResponse.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    nativeResponse.end();
+    return;
+  }
+
   if (parsedUrl.pathname === '/api/health') {
     nativeResponse.statusCode = 200;
     nativeResponse.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -142,7 +167,7 @@ const server = http.createServer(async (request, nativeResponse) => {
   }
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     nativeResponse.statusCode = 405;
-    nativeResponse.setHeader('Allow', 'GET, HEAD');
+    nativeResponse.setHeader('Allow', 'GET, HEAD, OPTIONS');
     nativeResponse.end('Method not allowed');
     return;
   }

@@ -52,18 +52,31 @@ create policy "Users can update their profile"
   using (auth.uid() = uid)
   with check (auth.uid() = uid);
 
-create policy "Approved articles are public"
+-- Leitura de artigos: artigos aprovados são públicos; autores podem ler os seus próprios em qualquer status
+create policy "Approved articles are public or author can read"
   on public.articles for select
   using (status = 'aprovado' or auth.uid() = author_uid);
 
-create policy "Users can submit their articles"
+-- Inserção de artigos pelo cliente: OBRIGATORIAMENTE em status pendente e sem manipulação de revisão
+create policy "Users can submit pending articles only"
   on public.articles for insert
-  with check (auth.uid() = author_uid);
+  with check (
+    auth.uid() = author_uid
+    and status in ('pendente_revisao', 'pendente_pagamento')
+    and reviewed_at is null
+    and reviewed_by is null
+  );
 
-create policy "Users can update their own articles"
+-- Atualização pelo cliente: apenas artigos não aprovados, forçando retorno para pendente_revisao e impedindo auto-aprovação
+create policy "Users can update non-approved articles"
   on public.articles for update
-  using (auth.uid() = author_uid)
-  with check (auth.uid() = author_uid);
+  using (auth.uid() = author_uid and status in ('pendente_revisao', 'rejeitado', 'pendente_pagamento'))
+  with check (
+    auth.uid() = author_uid
+    and status = 'pendente_revisao'
+    and reviewed_at is null
+    and reviewed_by is null
+  );
 
 -- Tabela de mensagens de contato dos leitores
 create table if not exists public.contact_messages (
