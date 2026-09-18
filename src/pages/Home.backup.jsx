@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React from 'react';
 import { useNavigation } from '../hooks/useNavigation';
 import { ArticleCard } from '../components/articles/ArticleCard';
 import { FavoriteButton } from '../components/ui/FavoriteButton';
@@ -6,71 +6,6 @@ import { Sidebar } from '../components/layout/Sidebar';
 
 export function Home({ articles = [], user }) {
   const go = useNavigation();
-
-  // Seleção estável e determinística de 3 artigos reais existentes
-  const featuredArticles = useMemo(() => {
-    if (!articles || !articles.length) return [];
-    const explicitlyFeatured = articles.filter((a) => a.featured);
-    const regular = articles.filter((a) => !a.featured);
-    const pool = [...explicitlyFeatured, ...regular];
-    const seen = new Set();
-    const result = [];
-    for (const art of pool) {
-      const key = art.slug || art.id;
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(art);
-      }
-      if (result.length === 3) break;
-    }
-    return result;
-  }, [articles]);
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-
-  const featured = featuredArticles[currentIndex] || featuredArticles[0] || articles[0];
-  const coverUrl = featured?.image || featured?.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80';
-
-  // Transição suave entre slides
-  const changeSlide = useCallback((nextIndex) => {
-    if (nextIndex === currentIndex) return;
-    setIsSwitching(true);
-    const timeout = setTimeout(() => {
-      setCurrentIndex(nextIndex);
-      setIsSwitching(false);
-    }, 280);
-    return () => clearTimeout(timeout);
-  }, [currentIndex]);
-
-  // Rotação automática a cada 7 segundos (respeitando prefers-reduced-motion e pause on hover)
-  useEffect(() => {
-    if (!featuredArticles.length || featuredArticles.length <= 1) return;
-
-    const prefersReducedMotion = typeof window !== 'undefined' &&
-      window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (prefersReducedMotion || isPaused) return;
-
-    const timer = setInterval(() => {
-      setIsSwitching(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % featuredArticles.length);
-        setIsSwitching(false);
-      }, 280);
-    }, 7000);
-
-    return () => clearInterval(timer);
-  }, [featuredArticles.length, isPaused]);
-
-  // Feed de histórias estável (não pula durante a rotação)
-  const otherArticles = useMemo(() => {
-    const featuredSlugs = new Set(featuredArticles.map((a) => a.slug));
-    const rest = articles.filter((a) => !featuredSlugs.has(a.slug));
-    return rest.length > 0 ? rest : articles.filter((a) => a.slug !== featured?.slug);
-  }, [articles, featuredArticles, featured?.slug]);
 
   if (!articles.length) {
     return (
@@ -87,6 +22,10 @@ export function Home({ articles = [], user }) {
       </main>
     );
   }
+
+  const featured = articles.find((article) => article.featured) || articles[0];
+  const otherArticles = articles.filter((article) => article.slug !== featured.slug);
+  const coverUrl = featured.image || featured.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80';
 
   return (
     <main className="container home-layout">
@@ -126,44 +65,18 @@ export function Home({ articles = [], user }) {
           </div>
         </section>
 
-        {/* HERO EDITORIAL SPOTLIGHT DINÂMICO */}
-        <section
-          className={`hero-article-modern ${isSwitching ? 'is-switching' : ''}`}
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-          onFocus={() => setIsPaused(true)}
-          onBlur={() => setIsPaused(false)}
-          aria-label="Artigo em Destaque Editorial"
-        >
+        {/* HERO EDITORIAL REDESIGN */}
+        <section className="hero-article-modern">
           <div className="hero-copy-modern">
             <div className="hero-kicker-row">
               <span className="hero-live-badge">
                 <span className="hero-live-dot" /> Destaque Editorial
               </span>
               <span className="hero-tag-accent">{featured.category}</span>
-              {featuredArticles.length > 1 && (
-                <div className="hero-indicators-bar" role="tablist" aria-label="Navegação entre os 3 destaques">
-                  {featuredArticles.map((art, idx) => (
-                    <button
-                      key={art.slug || idx}
-                      type="button"
-                      role="tab"
-                      aria-selected={idx === currentIndex}
-                      aria-label={`Ir para o destaque ${idx + 1}: ${art.title}`}
-                      className={`hero-dot-indicator ${idx === currentIndex ? 'is-active' : ''}`}
-                      onClick={() => changeSlide(idx)}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
 
             <h2 className="hero-title-modern">
-              <a
-                href={`/artigo/${featured.slug}`}
-                onClick={(e) => { e.preventDefault(); go(`/artigo/${featured.slug}`); }}
-                title={featured.title}
-              >
+              <a href={`/artigo/${featured.slug}`} onClick={(e) => { e.preventDefault(); go(`/artigo/${featured.slug}`); }}>
                 {featured.title}
               </a>
             </h2>
@@ -191,7 +104,7 @@ export function Home({ articles = [], user }) {
                 <span>Ler história completa</span>
                 <span className="cta-arrow-icon" aria-hidden="true">→</span>
               </a>
-              <FavoriteButton key={featured.slug} slug={featured.slug} />
+              <FavoriteButton slug={featured.slug} />
             </div>
           </div>
 
