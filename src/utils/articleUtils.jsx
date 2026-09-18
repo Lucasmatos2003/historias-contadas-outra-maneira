@@ -1,7 +1,9 @@
 import React from 'react';
-import { getArticleAmazonBooks } from '../data';
+import { getArticleAmazonBooks, ENABLE_AMAZON_WIDGETS } from '../data';
+import { getV2Article } from '../data/v2Articles';
 
 export function enhanceArticleContent(id, title, content) {
+  if (!ENABLE_AMAZON_WIDGETS) return content;
   if (!Array.isArray(content) || content.length === 0) return content;
   const copy = [...content];
   const lastIdx = copy.length - 1;
@@ -37,8 +39,6 @@ export function formatSupabaseArticle(row) {
   const categorySlug = row.category === 'curiosidades-geradas'
     ? 'curiosidades-geradas'
     : (row.category === 'geopolitica-ficticia' ? 'geopolitica-ficticia' : 'historia-alternativa');
-  const words = (row.content || '').split(/\s+/).length;
-  const readingTime = `${Math.max(1, Math.round(words / 160))} min`;
   const date = row.created_at
     ? new Date(row.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
     : 'Recentemente';
@@ -50,8 +50,13 @@ export function formatSupabaseArticle(row) {
     .replace(/(^-|-$)/g, '');
   const slug = `${slugBase}-${(row.id || '').slice(0, 8)}`;
 
+  // Lookup V2 Enriched Editorial Content
+  const v2 = getV2Article(row.id, slugBase);
+
   let content = [];
-  if (Array.isArray(row.content)) {
+  if (v2 && Array.isArray(v2.content) && v2.content.length > 0) {
+    content = v2.content;
+  } else if (Array.isArray(row.content)) {
     content = row.content;
   } else if (typeof row.content === 'string') {
     try {
@@ -62,24 +67,35 @@ export function formatSupabaseArticle(row) {
     }
   }
 
-  const amazonBooks = getArticleAmazonBooks({ id: row.id, title: row.title, category: row.category, slugBase });
+  const words = content.join(' ').split(/\s+/).length;
+  const readingTime = v2?.readingTime || `${Math.max(1, Math.round(words / 160))} min`;
+  const sources = v2?.sources || (Array.isArray(row.sources) ? row.sources : []);
+  const disclaimer = v2?.disclaimer || row.disclaimer || '';
+  const editorialType = v2?.editorialType || row.editorial_type || 'especulacao';
+
+  const amazonBooks = ENABLE_AMAZON_WIDGETS
+    ? getArticleAmazonBooks({ id: row.id, title: row.title, category: row.category, slugBase })
+    : [];
   const enhancedContent = enhanceArticleContent(row.id, row.title, content);
 
   return {
     id: row.id,
     slug,
     slugBase,
-    title: row.title,
-    excerpt: row.excerpt,
+    title: v2?.title || row.title,
+    excerpt: v2?.excerpt || row.excerpt,
     category,
     categorySlug,
-    author: row.author_name || 'Escritor',
+    author: row.author_name || v2?.author || 'Lucas Matos',
     author_uid: row.author_uid,
     readingTime,
     date,
     image: row.cover_image || 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1400&q=85',
     secondaryImage: row.secondary_image || '',
     content: enhancedContent,
+    sources,
+    disclaimer,
+    editorialType,
     amazonBooks,
     featured: false
   };
@@ -99,19 +115,24 @@ export function renderParagraphContent(text) {
     const label = match[1];
     const href = match[2];
     const isAmazon = href.includes('amazon.com');
-    elements.push(
-      <a
-        key={match.index}
-        href={href}
-        target="_blank"
-        rel={isAmazon ? 'noopener noreferrer sponsored' : 'noopener noreferrer'}
-        className={isAmazon ? 'article-affiliate-link' : 'article-inline-link'}
-        title={isAmazon ? `Ver "${label}" na Amazon` : label}
-      >
-        {isAmazon && <span className="affiliate-book-icon" aria-hidden="true">📖 </span>}
-        {label}
-      </a>
-    );
+
+    if (isAmazon && !ENABLE_AMAZON_WIDGETS) {
+      elements.push(<span key={match.index} className="book-reference-title">{label}</span>);
+    } else {
+      elements.push(
+        <a
+          key={match.index}
+          href={href}
+          target="_blank"
+          rel={isAmazon ? 'noopener noreferrer sponsored' : 'noopener noreferrer'}
+          className={isAmazon ? 'article-affiliate-link' : 'article-inline-link'}
+          title={isAmazon ? `Ver "${label}" na Amazon` : label}
+        >
+          {isAmazon && <span className="affiliate-book-icon" aria-hidden="true">📖 </span>}
+          {label}
+        </a>
+      );
+    }
     lastIndex = regex.lastIndex;
   }
 

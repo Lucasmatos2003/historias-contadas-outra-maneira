@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigation } from '../../hooks/useNavigation';
-import { amazonLink } from '../../data';
+import { amazonLink, ENABLE_AMAZON_WIDGETS } from '../../data';
 
 export function Sidebar({ user }) {
   const go = useNavigation();
@@ -124,54 +124,56 @@ export function Sidebar({ user }) {
       </div>
 
       {/* BIBLIOTECA DA REVISTA — AMAZON SIDEBAR */}
-      <div className="sidebar-amazon-card">
-        <div className="sidebar-amazon-header">
-          <span className="sidebar-amazon-icon">📚</span>
-          <div>
-            <p className="sidebar-amazon-eyebrow">Biblioteca da Revista</p>
-            <strong className="sidebar-amazon-title">Livros para ir mais fundo</strong>
+      {ENABLE_AMAZON_WIDGETS && (
+        <div className="sidebar-amazon-card">
+          <div className="sidebar-amazon-header">
+            <span className="sidebar-amazon-icon">📚</span>
+            <div>
+              <p className="sidebar-amazon-eyebrow">Biblioteca da Revista</p>
+              <strong className="sidebar-amazon-title">Livros para ir mais fundo</strong>
+            </div>
           </div>
+          <div className="sidebar-amazon-books">
+            {[
+              {
+                asin: '8535928308',
+                title: 'SPQR: Uma História de Roma Antiga',
+                author: 'Mary Beard',
+                price: 'R$ 64,90'
+              },
+              {
+                asin: '8576160285',
+                title: 'Colapso: Como as Sociedades Escolhem Fracassar ou Sobreviver',
+                author: 'Jared Diamond',
+                price: 'R$ 89,90'
+              },
+              {
+                asin: '8535919082',
+                title: '1453: A Queda de Constantinopla',
+                author: 'Roger Crowley',
+                price: 'R$ 59,90'
+              }
+            ].map((book) => (
+              <a
+                key={book.asin}
+                href={amazonLink(book.asin)}
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                className="sidebar-amazon-book-row"
+                aria-label={`Ver ${book.title} na Amazon`}
+              >
+                <span className="sidebar-amazon-book-thumb">📖</span>
+                <div className="sidebar-amazon-book-info">
+                  <span className="sidebar-amazon-book-title">{book.title}</span>
+                  <span className="sidebar-amazon-book-meta">{book.author} · {book.price}</span>
+                </div>
+                <span className="sidebar-amazon-book-arrow">›</span>
+              </a>
+            ))}
+          </div>
+          <p className="sidebar-amazon-disclosure">* Links de afiliado Amazon Associates</p>
         </div>
-        <div className="sidebar-amazon-books">
-          {[
-            {
-              asin: '8535928308',
-              title: 'SPQR: Uma História de Roma Antiga',
-              author: 'Mary Beard',
-              price: 'R$ 64,90'
-            },
-            {
-              asin: '8576160285',
-              title: 'Colapso: Como as Sociedades Escolhem Fracassar ou Sobreviver',
-              author: 'Jared Diamond',
-              price: 'R$ 89,90'
-            },
-            {
-              asin: '8535919082',
-              title: '1453: A Queda de Constantinopla',
-              author: 'Roger Crowley',
-              price: 'R$ 59,90'
-            }
-          ].map((book) => (
-            <a
-              key={book.asin}
-              href={amazonLink(book.asin)}
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              className="sidebar-amazon-book-row"
-              aria-label={`Ver ${book.title} na Amazon`}
-            >
-              <span className="sidebar-amazon-book-thumb">📖</span>
-              <div className="sidebar-amazon-book-info">
-                <span className="sidebar-amazon-book-title">{book.title}</span>
-                <span className="sidebar-amazon-book-meta">{book.author} · {book.price}</span>
-              </div>
-              <span className="sidebar-amazon-book-arrow">›</span>
-            </a>
-          ))}
-        </div>
-        <p className="sidebar-amazon-disclosure">* Links de afiliado Amazon Associates</p>
-      </div>
+      )}
     </aside>
   );
 }

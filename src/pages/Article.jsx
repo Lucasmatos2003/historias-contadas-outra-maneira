@@ -9,6 +9,25 @@ import { ReadNextGrid } from '../components/articles/ReadNextGrid';
 import { Sidebar } from '../components/layout/Sidebar';
 import { renderParagraphContent } from '../utils/articleUtils';
 
+function renderArticleItem(item, key) {
+  if (typeof item !== 'string') return null;
+  const trimmed = item.trim();
+  if (trimmed.startsWith('### ')) {
+    return <h3 key={key}>{renderParagraphContent(trimmed.slice(4))}</h3>;
+  }
+  if (trimmed.startsWith('## ')) {
+    return <h2 key={key}>{renderParagraphContent(trimmed.slice(3))}</h2>;
+  }
+  if (trimmed.startsWith('> ')) {
+    return (
+      <blockquote key={key}>
+        <p>{renderParagraphContent(trimmed.slice(2))}</p>
+      </blockquote>
+    );
+  }
+  return <p key={key}>{renderParagraphContent(item)}</p>;
+}
+
 export function Article({ slug, articles = [], user }) {
   const article = articles.find((item) => item.slug === slug || item.id === slug || item.slugBase === slug);
   if (!article) return <NotFound />;
@@ -30,6 +49,15 @@ export function Article({ slug, articles = [], user }) {
       }
       el.setAttribute('content', value);
     };
+
+    // Canonical tag
+    let canonicalEl = document.querySelector('link[rel="canonical"]');
+    if (!canonicalEl) {
+      canonicalEl = document.createElement('link');
+      canonicalEl.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.setAttribute('href', pageUrl);
 
     // Basic
     document.title = `${article.title} | Histórias Contadas de Outra Maneira`;
@@ -81,6 +109,7 @@ export function Article({ slug, articles = [], user }) {
 
     return () => {
       document.getElementById('article-jsonld')?.remove();
+      canonicalEl?.remove();
     };
   }, [article]);
 
@@ -104,7 +133,7 @@ export function Article({ slug, articles = [], user }) {
             <span className="eyebrow">{article.category}</span>
             <span className={`editorial-nature-tag ${natureBadgeClass}`}>{natureBadge}</span>
           </div>
-          <h2>{article.title}</h2>
+          <h1 className="article-title">{article.title}</h1>
           <div className="meta-row">
             <span>Por {article.author}</span>
             <span>{article.readingTime}</span>
@@ -114,9 +143,7 @@ export function Article({ slug, articles = [], user }) {
         </div>
         <div className="article-hero-image" style={{ backgroundImage: `url('${article.image}')` }} />
         <div className="article-body">
-          {firstHalf.map((paragraph, idx) => (
-            <p key={idx}>{renderParagraphContent(paragraph)}</p>
-          ))}
+          {firstHalf.map((paragraph, idx) => renderArticleItem(paragraph, idx))}
 
           {/* BLOCO AMAZON NO MEIO DO ARTIGO */}
           {article.amazonBooks && article.amazonBooks.length > 0 && (
@@ -129,9 +156,7 @@ export function Article({ slug, articles = [], user }) {
               <figcaption className="article-body-caption">Ilustração enviada pelo autor</figcaption>
             </figure>
           )}
-          {secondHalf.map((paragraph, idx) => (
-            <p key={idx + midPoint}>{renderParagraphContent(paragraph)}</p>
-          ))}
+          {secondHalf.map((paragraph, idx) => renderArticleItem(paragraph, idx + midPoint))}
 
           {/* QUADRO DE FONTES & REFERÊNCIAS HISTÓRICAS */}
           {article.sources && article.sources.length > 0 && (

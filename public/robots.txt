@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /perfil
+Disallow: /submeter
+Disallow: /login
+Disallow: /cadastro
+
+Sitemap: https://historiasdeoutramaneira.com.br/sitemap.xml

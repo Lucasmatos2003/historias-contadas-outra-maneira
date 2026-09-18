@@ -1,8 +1,8 @@
 import React from 'react';
-import { amazonLink } from '../../data';
+import { amazonLink, ENABLE_AMAZON_WIDGETS } from '../../data';
 
 export function AmazonBookWidget({ books, compact = false }) {
-  if (!books || !books.length) return null;
+  if (!ENABLE_AMAZON_WIDGETS || !books || !books.length) return null;
 
   return (
     <div className={`amazon-widget ${compact ? 'amazon-widget--compact' : ''}`}>

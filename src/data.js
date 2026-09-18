@@ -1,4 +1,7 @@
 // ─── CONFIGURAÇÃO AMAZON ASSOCIATES ──────────────────────────────────────────
+// Flag editorial para habilitar ou desabilitar temporariamente blocos e links de afiliados
+export const ENABLE_AMAZON_WIDGETS = false;
+
 // Substitua 'SEU-TAG-20' pelo seu affiliate tag quando tiver sua conta aprovada.
 // Ex: 'historiascontadas-20'
 // Cadastre-se gratuitamente em: https://affiliate-program.amazon.com.br/
@@ -14,19 +17,20 @@ export const articles = [
   {
     slug: 'roma-que-nao-foi',
     title: 'Se Roma tivesse perdido a guerra de Cartago, como o mundo seria hoje?',
-    excerpt: 'Uma análise do que muda quando o curso da história toma um rumo inesperado — e como pequenos desvios redefinem impérios e religiões.',
+    excerpt: 'Uma análise de como a vitória de Aníbal Barca e a sobrevivência de Cartago teriam gerado uma Europa mercantil sem o Direito Romano e sem o latim imperial.',
     category: 'História Alternativa',
     categorySlug: 'historia-alternativa',
     editorialType: 'especulacao',
-    author: 'Equipe Revista Digital',
-    readingTime: '14 min',
+    author: 'Lucas Matos',
+    readingTime: '9 min',
     date: '14 de setembro',
     featured: true,
     image: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1400&q=85',
     sources: [
       'Políbio — Histórias (Livros I-III: A Ascensão de Roma e o Confronto Púnico)',
       'Tito Lívio — Ab Urbe Condita (História de Roma desde a sua Fundação)',
-      'Adrian Goldsworthy — The Fall of Carthage: The Punic Wars 265–146 BC (Cassell Military Paperbacks)'
+      'Adrian Goldsworthy — The Fall of Carthage: The Punic Wars 265–146 BC (Cassell Military Paperbacks)',
+      'Mary Beard — SPQR: Uma História de Roma Antiga (Companhia das Letras)'
     ],
     disclaimer: 'Artigo de história contrafactual baseado em fatos reais sobre a Segunda Guerra Púnica, projetando consequências especulativas a partir de fontes arqueológicas e historiográficas.',
     amazonBooks: [
@@ -35,45 +39,56 @@ export const articles = [
         title: 'A Queda de Cartago: As Guerras Púnicas 265-146 a.C.',
         author: 'Adrian Goldsworthy',
         price: 'R$ 79,90',
-        description: 'O relato definitivo das Guerras Púnicas — da ascensão de Cartago ao triunfo final de Roma. Obra de referência para entender o que estava em jogo.'
+        description: 'O relato definitivo das Guerras Púnicas — da ascensão de Cartago ao triunfo final de Roma.'
       },
       {
         asin: '8535928308',
         title: 'SPQR: Uma História de Roma Antiga',
         author: 'Mary Beard',
         price: 'R$ 64,90',
-        description: 'Como Roma se tornou Roma? A grande historiadora Mary Beard explora os fundamentos do poder romano — e o que teria sido diferente se ele não tivesse prevalecido.'
-      },
-      {
-        asin: '8537810258',
-        title: 'Aníbal: O Inimigo de Roma',
-        author: 'John Prevas',
-        price: 'R$ 54,90',
-        description: 'A história do general que quase destruiu Roma. Uma biografia fascinante do estrategista que atravessou os Alpes com elefantes e venceu batalhas impossíveis.'
+        description: 'Como Roma se tornou Roma? A grande historiadora Mary Beard explora os fundamentos do poder romano.'
       }
     ],
     content: [
-      'A história romana é frequentemente narrada como uma escalada irresistível para o domínio. Mas e se a derrota em Cartago tivesse sido o ponto de inflexão que separou a potência imperial de um futuro de rivalidades fragmentadas?',
-      'A resposta não está apenas em mapas. Está na forma como cidades, comércio e religião se reorganizam quando uma superpotência não consegue manter a sua coerência.',
-      'Uma civilização menos centralizada teria passado a depender mais de alianças, rotas comerciais complexas e mecanismos locais de poder.',
-      'O aspecto mais fascinante é perceber que a história não é uma linha única, mas um conjunto de possibilidades que se cruzam em momentos delicados. Para aprofundar na estratégia militar e no confronto que definiu esse rumo, recomendamos as obras fundamentais [A Queda de Cartago de Adrian Goldsworthy](https://www.amazon.com.br/dp/8532647952?tag=historiasco0b-20&linkCode=as2) e o clássico [SPQR: Uma História de Roma Antiga de Mary Beard](https://www.amazon.com.br/dp/8535928308?tag=historiasco0b-20&linkCode=as2).'
+      'A história da civilização ocidental é frequentemente ensinada como uma marcha inevitável a partir do fórum de Roma. No entanto, no outono de 216 a.C., após o massacre de Canas — onde o general cartaginês Aníbal Barca aniquilou oito legiões romanas em uma única tarde —, a República de Roma esteve a poucas semanas do colapso militar absoluto.',
+      'Roma sobreviveu graças à obstinação fanática de seu Senado e à estratégia de atrito de Fábio Máximo, culminando na vitória decisiva de Cipião Africano na [Batalha de Zama](https://pt.wikipedia.org/wiki/Batalha_de_Zama) em 202 a.C. Mas o que teria acontecido se a cavalaria númida de Aníbal tivesse prevalecido em Zama, forçando a destruição da hegemonia romana?',
+
+      '## O Mundo Sem Império Centralizado: A Talassocracia Púnica',
+      'Cartago não era uma potência territorial agrária militarista nos moldes de Roma; era uma **república mercantil fenícia** voltada para as rotas marítimas, o comércio de estanho, prata e especiarias e a manutenção de entrepostos costeiros.',
+      'Se Cartago tivesse vencido:',
+      'Não haveria uma conquista militar impiedosa do interior europeu. A Hispânia, a Gália e a Germânia teriam permanecido sob o controle de tribos celtas e germânicas soberanas, negociando vinho e metais com mercadores púnicos em feitorias litorâneas, mas preservando suas línguas e estruturas tribais nativas.',
+      '> "O Mediterrâneo não teria sido o Mare Nostrum de uma única superpotência armada, mas uma vasta rede de cidades-estado mercantis em perpétuo equilíbrio diplomático."',
+
+      '## O Fim do Latim e do Direito Romano',
+      'Sem as legiões de César e sem a administração dos procônsules romanos:',
+      'As línguas neolatinas — como o português, o espanhol, o francês e o italiano — jamais teriam nascido. A Europa Ocidental falaria dialetos celtas e germânicos entremeados por vocábulos da língua púnica semítica falada pelos mercadores fenícios.',
+      'O **Direito Romano**, que forneceu a estrutura de códigos civis, direitos de propriedade e instituições jurídicas do Ocidente, seria substituído por um direito consuetudinário mercantil baseado em contratos comerciais e arbitragens marítimas corporativas.',
+
+      '## O Destino das Religiões: O Cristianismo Teria Existido?',
+      'O impacto mais profundo ocorreria na esfera espiritual. A rápida disseminação do cristianismo primitivo nos primeiros três séculos só foi viável graças à infraestrutura física e jurídica da *Pax Romana*: as estradas pavimentadas romanas, a segurança naval contra piratas no Mediterrâneo e a universalidade do grego koiné e do latim.',
+      'Em um mundo fragmentado em reinos tribais e confederações costeiras púnicas voltadas ao culto de Ba\'al Hammon e Tanit, pequenas seitas monoteístas da Judeia teriam permanecido como fenômenos religiosos locais no Levante, sem canais de expansão universal para o coração da Europa.',
+
+      '## Conclusão',
+      'Imaginar a derrota de Roma é compreender que o Ocidente que conhecemos não foi o resultado de um destino superior dos deuses, mas o produto de uma série de decisões militares e contingências políticas nas planícies do Norte da África. Sem Roma, o mundo teria sido mais plural, descentralizado e mercantil — mas talvez menos coeso na memória de suas leis.'
     ]
   },
   {
-    slug: 'mapa-nao-desenhado',
+    slug: 'bizancio-sobreviveu',
     title: 'O mapa que nunca foi desenhado: a sobrevivência bizantina e o novo equilíbrio global',
-    excerpt: 'Como a Europa e o Oriente Médio teriam sido reorganizados se o Império Bizantino tivesse resistido como potência intermediária.',
+    excerpt: 'Como a Europa e o Oriente Médio teriam sido reorganizados se o Império Bizantino tivesse repelido o cerco de Maomé II em 1453 e resistido como potência intermediária.',
     category: 'Geopolítica Fictícia',
     categorySlug: 'geopolitica-ficticia',
     editorialType: 'geopolitica',
-    author: 'Equipe Revista Digital',
-    readingTime: '6 min',
+    author: 'Lucas Matos',
+    readingTime: '9 min',
     date: '12 de setembro',
+    featured: false,
     image: 'https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=900&q=80',
     sources: [
       'Georgije Ostrogorski — História do Estado Bizantino (Fundações e Diplomacia Oriental)',
       'John Julius Norwich — A Short History of Byzantium (Penguin Books)',
-      'Steven Runciman — The Fall of Constantinople 1453 (Cambridge University Press)'
+      'Steven Runciman — The Fall of Constantinople 1453 (Cambridge University Press)',
+      'Roger Crowley — 1453: A Queda de Constantinopla (L&PM Editores)'
     ],
     disclaimer: 'Simulação geopolítica hipotética analisando equilíbrios de poder territoriais entre potências europeias e orientais a partir do século XV.',
     amazonBooks: [
@@ -82,21 +97,35 @@ export const articles = [
         title: '1453: A Queda de Constantinopla',
         author: 'Roger Crowley',
         price: 'R$ 59,90',
-        description: 'A narrativa definitiva dos 53 dias que mudaram o mundo: o cerco otomano e o fim do Império Romano do Oriente. Um livro de história que se lê como um thriller.'
+        description: 'A narrativa definitiva dos 53 dias que mudaram o mundo: o cerco otomano e o fim do Império Romano do Oriente.'
       },
       {
         asin: '8578278445',
         title: 'Bizâncio: Uma Biografia',
         author: 'Judith Herrin',
         price: 'R$ 74,90',
-        description: 'O Império Bizantino foi muito mais do que a continuação de Roma. Uma das maiores especialistas mundiais desvela mil anos de civilização, poder e cultura.'
+        description: 'O Império Bizantino foi muito mais do que a continuação de Roma.'
       }
     ],
     content: [
-      'O Império Bizantino também poderia ser entendido como um mundo próprio, em diálogo constante com Oriente e Ocidente.',
-      'Se a sua continuidade territorial tivesse sido mais sólida, a Europa talvez teria absorvido mais influências orientais em linguagem, arquitetura e administração naval.',
-      'Tudo muda quando a formação de um poder central intermediário não se interrompe abruptamente: o Mediterrâneo Oriental se transformaria em uma confederação comercial estável.',
-      'A rota das Índias e o início das Grandes Navegações teriam seguido dinâmicas inteiramente distintas, redefinindo as fronteiras e alianças de potências ibéricas e do norte europeu. Para entender o peso real dessa virada no Mediterrâneo e a queda de Constantinopla, veja [1453: A Queda de Constantinopla de Roger Crowley](https://www.amazon.com.br/dp/8535919082?tag=historiasco0b-20&linkCode=as2) e a obra seminal [Bizâncio: Uma Biografia de Judith Herrin](https://www.amazon.com.br/dp/8578278445?tag=historiasco0b-20&linkCode=as2).'
+      'Na manhã de 29 de maio de 1453, após cinquenta e três dias de bombardeio pelos colossais canhões de bronze fundidos pelo húngaro Urbano, as tropas do sultão otomano Maomé II romperam a muralha teodosiana no setor do vale do Lico, matando em combate o último basileu romano, [Constantino XI Paleólogo](https://pt.wikipedia.org/wiki/Constantino_XI_Pale%C3%B3logo).',
+      'A queda de Constantinopla marcou o fim formal de mais de 1.100 anos de história imperial cristã oriental e o encerramento simbólico da Idade Média. Mas o cerco foi decidido por margens operacionais mínimas: os defensores bizantinos e genoveses repeliram sucessivos assaltos de janízaros, e o próprio sultão esteve perto de ordenar a retirada naval diante das perdas financeiras e morais.',
+      'E se uma tempestade naval no Mar de Mármara ou a chegada precoce de uma esquadra veneziana tivesse forçado o recuo otomano, garantindo a sobrevivência soberana de Bizâncio?',
+
+      '## O Tampão Cristão Entre o Oriente e o Ocidente',
+      'A existência contínua de um estado bizantino controlando os estreitos de Bósforo e Dardanelos mudaria o xadrez geopolítico da Europa Renascentista:',
+      '1. **O Fim da Ameaça Otomana aos Bálcãs e a Viena:** Na história real, a conquista de Constantinopla serviu de trampolim logístico para o Império Otomano avançar sobre a Grécia, Sérvia, Hungria e sitiar os portões de Viena em 1529. Com a capital bizantina resistindo na retaguarda, as linhas de abastecimento otomanas estariam permanentemente ameaçadas;',
+      '2. **O Renascimento da Diplomacia Ortodoxa:** Bizâncio sempre foi a mestre inigualável da espionagem, diplomacia de casamentos e subornos de ouro (a célebre *política bizantina*). O império atuaria como um amortecedor civilizacional entre o mundo islâmico e as monarquias católicas europeias.',
+      '> "Constantinopla não era apenas uma fortaleza; era a ponte dourada do comércio da Rota da Seda. Mantê-la como uma cidade cristã independente teria transformado o Mediterrâneo Oriental em um lago de comércio compartilhado."',
+
+      '## As Grandes Navegações Teriam Ocorrido?',
+      'O desdobramento mais surpreendente dessa hipótese atinge a história de Portugal e da Espanha:',
+      'Foi precisamente a asfixia das rotas terrestres de especiarias pelas pesadas taxas alfandegárias cobradas pelos otomanos que obrigou navegadores como Vasco da Gama e Cristóvão Colombo a buscarem rotas marítimas alternativas para as Índias contornando a África ou cruzando o Oceano Atlântico.',
+      'Com portos bizantinos abertos e mercadores genoveses e venezianos importando pimenta, seda e noz-moscada com tarifas previsíveis no Corno de Ouro, a urgência econômica de financiar caravelas arriscadas rumo ao oceano desconhecido teria sido muito menor. A descoberta das Américas e o desembarque de Pedro Álvares Cabral no Brasil poderiam ter sido postergados por décadas.',
+
+      '## Conclusão',
+      'A sobrevivência de Bizâncio teria preservado um império onde o grego clássico, a arte sacra de mosaicos dourados e o direito justiniano continuariam vivos como uma terceira via entre o catolicismo romano e o Islã.',
+      'Constantinopla não teria sido rebatizada como Istambul, mas permaneceria como a capital cosmopolita que por milênio uniu dois mundos sob a cúpula eterna de Santa Sofia.'
     ]
   },
   {
@@ -107,45 +136,45 @@ export const articles = [
     categorySlug: 'curiosidades-geradas',
     editorialType: 'fato',
     author: 'Equipe Revista Digital',
-    readingTime: '7 min',
+    readingTime: '9 min',
     date: '09 de setembro',
     featured: false,
     image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
     sources: [
       'Derek J. de Solla Price — Gears from the Greeks: The Antikythera Mechanism (Transactions of the American Philosophical Society, 1974)',
       'Nature — The Antikythera Mechanism Research Project: Decoding the Ancient Astronomical Calculator (Nature Vol. 444, 2006)',
-      'Joseph Needham — Science and Civilisation in China, Volume 3: Mathematics and the Sciences of the Heavens and the Earth (Cambridge University Press)'
+      'Joseph Needham — Science and Civilisation in China, Volume 3: Mathematics and the Sciences of the Heavens and the Earth (Cambridge University Press)',
+      'Jo Marchant — Decoding the Heavens: A 2,000-Year-Old Computer and the Century-Long Search to Discover Its Secrets (Da Capo Press)'
     ],
-    disclaimer: 'Fato histórico e arqueológico rigorosamente documentado com base em análises tomográficas e catálogos de museus internacionais.',
+    disclaimer: 'Fato histórico e arqueológico rigorosamente documentado com base em análises tomográficas tridimensionais, testes de raios X industriais e catálogos de museus internacionais.',
     amazonBooks: [
       {
         asin: '8535929851',
         title: 'O Mecanismo de Anticítera',
         author: 'Jo Marchant',
         price: 'R$ 49,90',
-        description: 'A investigação jornalística mais completa sobre o computador analógico mais antigo do mundo. Ciência, mistério e arqueologia marinha em um único volume.'
-      },
-      {
-        asin: '8576573083',
-        title: 'Tecnologias Perdidas da Antiguidade',
-        author: 'Jason Colavito',
-        price: 'R$ 44,90',
-        description: 'Das catapultas gregas ao fogo grego: as engenhocas e invenções da antiguidade que surpreenderam o mundo moderno. Arqueologia técnica acessível e fascinante.'
-      },
-      {
-        asin: '8588478323',
-        title: 'Engenheiros do Mundo Antigo',
-        author: 'John Freely',
-        price: 'R$ 52,90',
-        description: 'Da roda ao aqueduto romano, das engrenagens de bronze às máquinas de guerra: a história dos inventores que construíram o mundo antigo.'
+        description: 'A investigação mais completa sobre o computador analógico mais antigo do mundo.'
       }
     ],
     content: [
       'A visão moderna da história humana tende a desenhar o progresso técnico como uma linha reta ininterrupta — uma marcha gradual que parte da rusticidade das ferramentas de pedra até a precisão dos semicondutores. No entanto, o registro arqueológico é salpicado de anomalias fascinantes: artefatos cuja concepção matemática e execução metalúrgica parecem ter surgido séculos, ou até milênios, antes de seu tempo concebível.',
-      'O exemplo mais célebre dessa engenhosidade é o Mecanismo de Anticítera, recuperado em 1901 de um galeão naufragado no mar Egeu. Datado entre 150 e 100 a.C., esse fragmento corroído de bronze continha pelo menos 30 engrenagens minuciosamente talhadas, configuradas em um sistema de diferencial mecânico. O dispositivo não apenas previa eclipses solares e lunares com precisão cronométrica, mas também reproduzia a órbita irregular da Lua — utilizando um mecanismo de pino e ranhura que compensava o movimento elíptico séculos antes das leis de Kepler.',
-      'Do outro lado do mundo, no ano 132 d.C., o polímata chinês Zhang Heng apresentou à corte imperial Han o Houfeng Didong Yi, o primeiro sismoscópio documentado da história. Tratava-se de uma colossal ânfora de bronze com oito dragões voltados para os pontos cardeais, cada um segurando uma esfera de bronze na mandíbula. Quando um terremoto ocorria a centenas de quilômetros de distância, ondas sísmicas imperceptíveis na capital faziam oscilar um pêndulo interno de inércia, disparando uma alavanca que liberava a esfera correspondente direto na boca de um sapo de bronze abaixo, indicando prontamente a direção do desastre.',
-      'Na Constantinopla do século VII e na Bagdá do século IX, essa sofisticação atingiu novos extremos. Enquanto os irmãos Banu Musa projetavam autômatos mecânicos programáveis e flautas acionadas a vapor na Casa da Sabedoria, a marinha bizantina protegia sua capital com o Fogo Grego — uma mistura química pressurizada e inflamável capaz de arder sobre as ondas do mar, disparada por tubos de bronze com bombas térmicas cuja composição exata foi guardada com tanto zelo militar que seu segredo morreu com o império.',
-      'Essas relíquias desafiam a nossa soberba contemporânea. Elas provam que a perda de conhecimento não é uma ficção distópica, mas um evento recorrente nas cinzas de civilizações colapsadas. Para investigar a fundo o computador analógico mais antigo do mundo e a engenhosidade greco-romana, recomendamos as leituras fascinantes de [O Mecanismo de Anticítera de Jo Marchant](https://www.amazon.com.br/dp/8535929851?tag=historiasco0b-20&linkCode=as2) e [Tecnologias Perdidas da Antiguidade de Jason Colavito](https://www.amazon.com.br/dp/8576573083?tag=historiasco0b-20&linkCode=as2).'
+
+      '## 1. O Mecanismo de Anticítera: O Computador de Bronze Grego',
+      'Recuperado em 1901 por mergulhadores de esponjas nos destroços de um navio mercante romano afundado na costa da ilha grega de Anticítera, este fragmento corroído de bronze intrigou os pesquisadores por décadas. Tomografias tridimensionais de alta resolução realizadas nos anos 2000 revelaram um maquinismo composto por mais de **trinta engrenagens dentadas milimétricas** montadas em engastes diferenciais.',
+      'Construído entre 150 e 100 a.C., o artefato calculava com perfeição a posição do Sol, as fases da Lua, os eclipses com ciclos saros e até a órbita irregular lunar através de um engenhoso sistema de pino e ranhura que compensava o movimento elíptico — um conceito que a matemática ocidental só redescobriria com Johannes Kepler.',
+
+      '## 2. O Sismoscópio de Dragões de Zhang Heng (132 d.C.)',
+      'Na China imperial da dinastia Han, o polímata Zhang Heng apresentou ao imperador o *Houfeng Didong Yi*, o primeiro instrumento do mundo para detecção remota de terremotos. Tratava-se de um vaso de bronze de quase dois metros de largura cercado por oito dragões com a cabeça voltada para baixo segurando esferas de metal nas presas.',
+      'Quando um abalo sísmico ocorria a centenas de quilômetros de distância, ondas de choque imperceptíveis aos humanos na capital acionavam um pêndulo invertido interno, liberando a esfera do dragão voltado para a direção de onde vinha o tremor na boca de um sapo de bronze esculpido na base.',
+
+      '## 3. Os Autômatos da Casa da Sabedoria de Bagdá',
+      'No século IX, no apogeu da Idade de Ouro Islâmica, os três irmãos Banu Musa escreveram o *Kitab al-Hiyal* (O Livro dos Mecanismos Engenhosos). Entre dezenas de inventos, criaram o primeiro instrumento musical automatizado e programável: uma flauta acionada por pressão de vapor d\'água cujo repertório musical podia ser alterado por pinos inseridos em um cilindro giratório — o ancestral direto do rolo de pianola e dos computadores perfurados modernos.',
+
+      '## 4. O Fogo Grego e os Lança-Chamas Bizantinos',
+      'Desenvolvido pelo arquiteto sírio Calínico por volta de 678 d.C., o Fogo Grego salvou Constantinopla de dois cercos árabes devastadores. Tratava-se de um composto incendiário à base de petróleo, resina de pinho e enxofre pressurizado em sifões de bronze aquecidos a bordo de galés de guerra. A substância ardia vigorosamente em contato com a água do mar e não podia ser extinta por métodos convencionais, constituindo uma das primeiras armas químicas napalm da história.',
+
+      '## O Que Essas Descobertas Nos Ensinam?',
+      'Essas relíquias desafiam a nossa soberba contemporânea. Elas provam que a perda de conhecimento não é uma ficção distópica, mas um evento recorrente nas cinzas de civilizações colapsadas. A genialidade humana sempre floresceu quando estimulada pela observação rigorosa do cosmos e da matéria.'
     ]
   },
   {
@@ -155,39 +184,45 @@ export const articles = [
     category: 'Curiosidades Históricas',
     categorySlug: 'curiosidades-geradas',
     editorialType: 'fato',
-    author: 'Equipe Revista Digital',
-    readingTime: '8 min',
+    author: 'Lucas Matos',
+    readingTime: '9 min',
     date: '04 de setembro',
     featured: false,
     image: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=900&q=80',
     sources: [
-      'Roland Fletcher — Low-Density, Agrarian-Based Urbanism: A World Perspective (Angkor Research Program, University of Sydney)',
+      'Roland Fletcher — Low-Density, Agrarian-Based Urbanism: A World Perspective (University of Sydney)',
       'Linda R. Manzanilla — Teotihuacan: Exceptional City of Mesoamerica (Center for Latin American Studies)',
-      'Nevşehir Archaeology Museum — Underground Cities of Cappadocia: Derinkuyu and Kaymakli Archaeological Survey'
+      'Nevşehir Archaeology Museum — Underground Cities of Cappadocia: Derinkuyu Archaeological Survey',
+      'Brian Fagan — The Great Warming: Climate Change and the Rise and Fall of Civilizations (Bloomsbury)'
     ],
-    disclaimer: 'Fato histórico e pesquisa arqueológica documentada por levantamentos geológicos e escavações científicas.',
+    disclaimer: 'Fato histórico e pesquisa arqueológica documentada por levantamentos geológicos, escavações científicas e análises climáticas em sedimentos.',
     amazonBooks: [
       {
         asin: '8535909478',
         title: 'Cidades Perdidas da Antiguidade',
         author: 'Brian Fagan',
         price: 'R$ 67,90',
-        description: 'Das ruínas de Petra às pirâmides de Teotihuacan: a arqueologia das grandes metrópoles que desapareceram e o que elas revelam sobre o colapso das civilizações.'
-      },
-      {
-        asin: '8576160285',
-        title: 'Colapso: Como as Sociedades Escolhem Fracassar ou Sobreviver',
-        author: 'Jared Diamond',
-        price: 'R$ 89,90',
-        description: 'Por que algumas civilizações colapsam enquanto outras prosperam? Jared Diamond analisa os fatores ambientais, climáticos e sociais por trás do fim dos grandes impérios.'
+        description: 'Das ruínas de Petra às pirâmides de Teotihuacan: a arqueologia das grandes metrópoles que desapareceram.'
       }
     ],
     content: [
-      'Quando caminhamos pelas avenidas de uma metrópole contemporânea, somos dominados pela sensação de solidez permanente. No entanto, a história da civilização é uma crônica de cidades que pareciam eternas e que, em questão de poucas décadas, transformaram-se em esqueletos de pedra silenciados pela poeira. O mistério mais inquietante não reside naquelas que foram arrasadas pelo fogo da guerra, mas nas que foram simplesmente abandonadas por suas populações sem sinais evidentes de violência.',
-      'Sob as colinas escarpadas da Capadócia, na atual Turquia, repousa Derinkuyu — uma obra de engenharia de tirar o fôlego. Escavada na rocha vulcânica branda a mais de 85 metros de profundidade, esta cidade subterrânea estende-se por 18 níveis interconectados. Capaz de abrigar confortavelmente até 20.000 pessoas junto de seu gado, o complexo possuía poços de ventilação verticais que supriam ar puro até os pisos inferiores, prensas de vinho e azeite, refeitórios coletivos, poços artesianos e escolas. Para repelir exércitos invasores, cada nível era selado por pedras circulares de meia tonelada que só podiam ser roladas pelo lado de dentro, transformando o subsolo em uma fortaleza impenetrável que mais tarde foi esquecida por séculos até ser redescoberta por acaso em 1963.',
-      'No continente americano, Teotihuacan representa um enigma ainda mais perturbador. Por volta do ano 400 d.C., esta metrópole no vale do México contava com cerca de 125.000 habitantes, planejamento urbano em grade milimétrica e monumentos colossais como as Pirâmides do Sol e da Lua. Apesar de sua magnitude incomparável na Mesoamérica, no século VIII a cidade foi evacuada quase por completo. Quando os astecas encontraram o local séculos depois e o batizaram de "o lugar onde os homens se tornam deuses", não encontraram memoriais dinásticos nem registros textuais que explicassem quem construiu aquela maravilha ou por que todos partiram.',
-      'Mais ao leste, no Império Khmer, a Grande Angkor desvendou recentemente o papel devastador da ecologia. Com mais de mil quilômetros quadrados, Angkor foi o maior complexo urbano pré-industrial da Terra, alimentado por um monumental maquinário hidráulico de canais, diques e imensos reservatórios artificiais (barays). Análises climáticas em anéis de árvores comprovaram que décadas de secas severas seguidas de monções torrenciais no século XIV arrebentaram as comportas de drenagem. Sem água para as lavouras e incapazes de conter o assoreamento, a corte e a população viram-se forçadas a evacuar seus palácios monumentais para a selva.',
-      'O abandono dessas grandes metrópoles nos ensina uma lição fundamental sobre a fragilidade humana. Nenhum império é grande demais para sucumbir à escassez hídrica, à quebra do equilíbrio ambiental ou à desintegração de seus sistemas de suporte. As grandes investigações arqueológicas sobre esses colapsos podem ser conferidas em [Colapso: Como as Sociedades Escolhem Fracassar ou Sobreviver de Jared Diamond](https://www.amazon.com.br/dp/8576160285?tag=historiasco0b-20&linkCode=as2) e [Cidades Perdidas da Antiguidade de Brian Fagan](https://www.amazon.com.br/dp/8535909478?tag=historiasco0b-20&linkCode=as2).'
+      'Quando caminhamos pelas avenidas de uma metrópole contemporânea, somos dominados pela sensação de solidez permanente. No entanto, a história da civilização é uma crônica de cidades que pareciam eternas e que, em questão de poucas décadas, transformaram-se em esqueletos de pedra silenciados pela poeira.',
+      'O mistério mais inquietante não reside naquelas que foram arrasadas pelo fogo da guerra, mas nas que foram simplesmente abandonadas por suas populações sem sinais evidentes de violência externa.',
+
+      '## Derinkuyu: A Metrópole Subterrânea da Capadócia',
+      'Escavada no tufo vulcânico branda da atual Turquia central, [Derinkuyu](https://pt.wikipedia.org/wiki/Derinkuyu) desce a mais de 85 metros de profundidade ao longo de 18 andares subterrâneos interconectados. O complexo tinha capacidade para abrigar simultaneamente **20.000 pessoas** com seus rebanhos de gado.',
+      'Possuía poços de ventilação verticais que supriam oxigênio aos níveis mais profundos, prensas de azeite, refeitórios, escolas monásticas e portas circulares de pedra de meia tonelada que só podiam ser trancadas pelo lado de dentro para resistir a exércitos invasores persas e árabes. Foi abandonada e esquecida até ser reencontrada acidentalmente em 1963 durante uma reforma doméstica.',
+
+      '## Teotihuacan: A Cidade Onde os Homens Viravam Deuses',
+      'No vale central do México, por volta do ano 400 d.C., erguia-se uma das maiores capitais do planeta: Teotihuacan, com mais de 125.000 habitantes, planejamento em grelha geométrica monumental e as gigantescas Pirâmides do Sol e da Lua.',
+      'Por volta de 650 d.C., o centro cerimonial foi incendiado e a metrópole foi evacuada em massa. Quando os astecas a encontraram séculos mais tarde, não havia registros escritos de quem haviam sido seus reis ou que língua falavam, transformando o local em um santuário de mitos de criação.',
+
+      '## A Grande Angkor e o Colapso da Engenharia Hídrica',
+      'No Camboja, a capital do Império Khmer foi o maior aglomerado urbano pré-industrial do planeta, cobrindo mais de mil quilômetros quadrados. Seu funcionamento dependia de um maquinário hidráulico gigantesco de diques, canais e represas artificiais (*barays*).',
+      'Análises de anéis de árvores comprovaram que décadas de megassecas no século XIV seguidas de monções diluvianas romperam a rede de canais. Sem conseguir consertar o assoreamento das represas, a corte imperial abandonou Angkor à floresta tropical.',
+
+      '## A Vulnerabilidade Urbana',
+      'Nenhum império é grande demais para sucumbir à quebra de seu equilíbrio ecológico ou hídrico. Essas cidades perdidas permanecem como monumentos solenes que lembram à nossa própria civilização que o concreto e o asfalto só duram enquanto houver água e estabilidade social para mantê-los de pé.'
     ]
   },
   {
@@ -197,39 +232,44 @@ export const articles = [
     category: 'Curiosidades Históricas',
     categorySlug: 'curiosidades-geradas',
     editorialType: 'fato',
-    author: 'Equipe Revista Digital',
-    readingTime: '6 min',
+    author: 'Lucas Matos',
+    readingTime: '9 min',
     date: '01 de setembro',
     featured: false,
     image: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=900&q=80',
     sources: [
       'Procópio de Cesareia — Anekdota / História Secreta (Tradução e comentários de G. A. Williamson, Penguin Classics)',
       'Peter Brown — The World of Late Antiquity: AD 150–750 (W. W. Norton & Company)',
-      'Anthony Kaldellis — Procopius of Caesarea: Tyranny, History, and Philosophy at the End of Antiquity (University of Pennsylvania Press)'
+      'Anthony Kaldellis — Procopius of Caesarea: Tyranny, History, and Philosophy at the End of Antiquity (University of Pennsylvania Press)',
+      'Peter Sarris — Justinian: Emperor, Soldier, Saint (Basic Books)'
     ],
-    disclaimer: 'Análise documental sobre manuscritos bizantinos históricos preservados na Biblioteca Apostólica Vaticana.',
+    disclaimer: 'Análise documental sobre manuscritos bizantinos históricos preservados na Biblioteca Apostólica Vaticana e transcritos desde o Renascimento.',
     amazonBooks: [
       {
         asin: '8537815012',
         title: 'Justiniano: O Grande Imperador Bizantino',
         author: 'Peter Sarris',
         price: 'R$ 58,90',
-        description: 'A vida e o reinado do imperador que tentou reunificar Roma — e os escândalos de bastidores que Procópio registrou em segredo. O contexto real da História Secreta.'
-      },
-      {
-        asin: '8535931856',
-        title: 'A Idade de Ouro de Bizâncio',
-        author: 'John Julius Norwich',
-        price: 'R$ 72,90',
-        description: 'O período Justiniano visto por um dos maiores historiadores populares da era. Teodora, Belisário e os intrigantes de palácio que definiram um império.'
+        description: 'A vida e o reinado do imperador que tentou reunificar Roma — e os escândalos que Procópio registrou.'
       }
     ],
     content: [
-      'No século VI da nossa era, o Império Bizantino viveu o ápice de sua ambição sob o reinado de Justiniano I. Para consolidar seu legado de reconquista territorial e a ereção da deslumbrante basílica de Santa Sofia, o trono financiava as obras do mais refinado historiador da época: Procópio de Cesareia. Em tratados públicos amplamente distribuídos, como "As Guerras" e "Sobre as Construções", Procópio descrevia o imperador como um soberano magnânimo, incansável e guiado pela virtude cristã.',
-      'No entanto, por trás dessa fachada de reverência e mármore, Procópio redigia às escondidas o mais virulento documento de traição literária do mundo antigo: o Anekdota, conhecido hoje como a "História Secreta". Ciente de que qualquer página descoberta pelos guardas significaria tortura e execução sumária, o autor anotava à luz de velas os bastidores inconfessáveis da corte: extorsões fiscais generalizadas, subornos sistemáticos e o relato de que Justiniano era, em suas palavras, um governante demoníaco e tirânico.',
-      'O texto não poupou a imperatriz Teodora, uma das figuras femininas mais poderosas e enigmáticas da Idade Média. Procópio pintou um retrato impiedoso de sua ascensão, desde suas origens humildes como dançarina circense nos teatros de Constantinopla até seu papel à frente de uma implacável rede de espiões e calabouços no palácio imperial. Ainda assim, mesmo o cronista mais amargo não pôde apagar a coragem férrea da imperatriz durante a Revolta de Nika em 532 d.C., quando ela impediu a abdicação do imperador ao proclamar que a púrpura imperial era a mais nobre das mortalhas.',
-      'Concluído por volta do ano 550 d.C., o manuscrito permaneceu guardado em sigilo absoluto por décadas e depois por séculos, protegido pelo medo e pela censura das autoridades bizantinas. Somente em 1623 — mais de mil anos após a morte de Procópio — o prefeito da Biblioteca Vaticana, Nicolò Alemanni, encontrou uma cópia esquecida nos arquivos secretos e decidiu publicá-la em Roma, desferindo um choque devastador na imagem romântica do Império Romano do Oriente.',
-      'A sobrevivência da "História Secreta" é uma das maiores curiosidades do mundo historiográfico: ela nos lembra que a versão oficial dos vencedores é quase sempre uma encenação cuidadosamente polida. Para quem deseja explorar a fundo os bastidores reais e a dinastia justiniana, veja [Justiniano: O Grande Imperador Bizantino de Peter Sarris](https://www.amazon.com.br/dp/8537815012?tag=historiasco0b-20&linkCode=as2) e [A Idade de Ouro de Bizâncio de John Julius Norwich](https://www.amazon.com.br/dp/8535931856?tag=historiasco0b-20&linkCode=as2).'
+      'No século VI da nossa era, o Império Romano do Oriente viveu o ápice de sua ambição sob o reinado de [Justiniano I](https://pt.wikipedia.org/wiki/Justiniano_I). Para consolidar seu legado de reconquista militar da Itália e do Norte da África e celebrar a construção da monumental basílica de Santa Sofia, o trono financiava as crônicas oficiais do mais brilhante historiador da época: **Procópio de Cesareia**.',
+      'Em tratados públicos laudatórios amplamente distribuídos, como *As Guerras* e *Sobre as Construções*, Procópio retratou Justiniano como um líder piedoso, incansável e iluminado pela Providência divina. No entanto, por trás dessa fachada de mármore e ouro, Procópio redigia às escondidas o mais virulento libelo de denúncia da Antiguidade Tardia: o *Anekdota* (a "História Secreta").',
+
+      '## O Terror e a Pena Escondida',
+      'Procópio sabia com clareza absoluta que, se uma única página de seu manuscrito fosse encontrada pela guarda imperial dos excubitores, ele seria torturado e executado sumariamente sob a acusação de lesa-majestade. No documento secreto, o autor desnudou a voracidade fiscal do regime, os subornos institucionalizados na nomeação de juízes e a destruição de províncias inteiras por guerras ruinosas.',
+      'O cronista foi além, acusando Justiniano de ser um governante demoníaco que vagava pelos corredores desertos do palácio imperial durante a madrugada sem cabeça visível — uma metáfora do medo e da loucura tirânica que assolavam a corte de Constantinopla.',
+
+      '## Teodora: A Dançarina Que Virou Imperatriz',
+      'As páginas mais venenosas do *Anekdota* foram dedicadas à imperatriz [Teodora](https://pt.wikipedia.org/wiki/Teodora_(esposa_de_Justiniano)). Procópio descreveu com detalhes escandalosos suas origens humildes como atriz circense no hipódromo e a acusou de chefiar uma rede implacável de calabouços e execuções secretas no palácio.',
+      'Ainda assim, mesmo seu maior detrator não pôde apagar a coragem de ferro da imperatriz durante a **Revolta de Nika em 532 d.C.**, quando multidões ensanguentadas incendiavam a capital exigindo a deposição de Justiniano. Quando o imperador e seus conselheiros preparavam navios para fugir pelo mar, foi Teodora quem pronunciou as palavras que salvaram a dinastia: *"Para um imperador, a fuga é intolerável; e a púrpura imperial é a mais nobre das mortalhas."*',
+
+      '## A Redescoberta Mil Anos Depois',
+      'Concluído por volta de 550 d.C., o texto sobreviveu oculto por séculos nos cofres e bibliotecas secretas até ser redescoberto em 1623 pelo bibliotecário do Vaticano, Nicolò Alemanni. Sua publicação em Roma chocou a intelectualidade europeia, desmascarando a imagem imaculada do imperador cristão ideal.',
+
+      '## O Valor Histórico do Manuscrito',
+      'A sobrevivência da *História Secreta* é um dos maiores alertas da historiografia clássica: ela nos lembra que a verdade oficial gravada nos monumentos de pedra é quase sempre a versão encomendada pelo poder. Para entender o passado com honestidade, é preciso escutar não apenas as trombetas dos cortejos de vitória, mas também os sussurros dos homens que escreveram a verdade com medo e à luz de velas.'
     ]
   }
 ];

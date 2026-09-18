@@ -33,7 +33,7 @@ export function Layout({ children, articles, user, profile, isAdmin, onLogout })
           <span className="brand-mark">H</span>
           <span className="brand-text-block">
             <span className="eyebrow">Revista digital</span>
-            <h1>Histórias Contadas de Outra Maneira</h1>
+            <span className="brand-title">Histórias Contadas de Outra Maneira</span>
           </span>
         </a>
         <nav className={`main-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Navegação principal">
